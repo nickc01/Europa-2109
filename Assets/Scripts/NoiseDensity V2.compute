@@ -26,7 +26,7 @@ void Density(int3 id : SV_DispatchThreadID)
         return;
     }
 
-    float3 pos = centre + id * spacing - boundsSize / 2;
+    float3 pos = centre + (id * spacing) - (boundsSize / 2);
     float offsetNoise = 0;
 
     float noise = 0;
@@ -52,12 +52,12 @@ void Density(int3 id : SV_DispatchThreadID)
         finalVal += hardFloorWeight;
     }
 
-    if (closeEdges) {
+    /*if (closeEdges) {
         float3 edgeOffset = abs(pos * 2) - worldSize + spacing / 2;
         float edgeWeight = saturate(sign(max(max(edgeOffset.x, edgeOffset.y), edgeOffset.z)));
         finalVal = finalVal * (1 - edgeWeight) - 100 * edgeWeight;
 
-    }
+    }*/
 
     int index = indexFromCoord(id.x, id.y, id.z);
     points[index] = float4(pos, finalVal);

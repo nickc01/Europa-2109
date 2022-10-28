@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -7,6 +9,30 @@ using UnityEngine;
 
 public class Chunk : MonoBehaviour
 {
+    /// <summary>
+    /// Sorts chunks based on how close they are to the viewer
+    /// </summary>
+    public class DistanceSorter : IComparer<Chunk>
+    {
+        Comparer<float> floatComparer;
+
+        public Transform Viewer;
+        public int Compare(Chunk x, Chunk y)
+        {
+            if (floatComparer == null)
+            {
+                floatComparer = Comparer<float>.Default;
+            }
+            return floatComparer.Compare(DistanceToViewer(x),DistanceToViewer(y));
+        }
+
+        float DistanceToViewer(Chunk chunk)
+        {
+            return Vector3.Distance(Viewer.position,chunk.Position);
+        }
+    }
+
+
     public Vector3Int Position;
     public Map SourceMap { get; set; }
 
@@ -84,6 +110,7 @@ public class Chunk : MonoBehaviour
         await ChunkEnd();
         Mesh.Clear();
         gameObject.SetActive(false);
+        PointsLoaded = false;
     }
 
     private async Task ChunkStart(bool cached)
@@ -139,6 +166,8 @@ public class Chunk : MonoBehaviour
         using var file = System.IO.File.OpenRead(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt");
         using var gzipReader = new System.IO.Compression.GZipStream(file, System.IO.Compression.CompressionMode.Decompress);
         gzipReader.Read(bytes);
+
+        PointsLoaded = true;
     }
 
     public void SaveSynchronously()
@@ -151,5 +180,6 @@ public class Chunk : MonoBehaviour
     public void OnMeshUpdate()
     {
         MainRenderer.enabled = true;
+        //Debug.Log("Mesh Updated");
     }
 }

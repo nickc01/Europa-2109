@@ -4,8 +4,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class Map : MonoBehaviour
 {
@@ -56,7 +58,7 @@ public class Map : MonoBehaviour
 
     [Header("Brush Setting")]
     public float brushSpeed = 1;
-    public int brushSize = 10;
+    public int brushSize = 1;
     int _brushSize = 10;
 
     /*
@@ -79,7 +81,11 @@ public class Map : MonoBehaviour
 
     public int numVoxelPerAxis => numPointsPerAxis - 1;
 
+    public int numPointsInChunk => numPointsPerAxis* numPointsPerAxis * numPointsPerAxis;
+
     List<Task> taskPool = new List<Task>();
+
+    Chunk.DistanceSorter distanceSorter;
 
     class BufferSet
     {
@@ -104,7 +110,8 @@ public class Map : MonoBehaviour
     }
 
 
-    Queue<Chunk> chunkMeshesToRefresh = new Queue<Chunk>();
+    List<Chunk> chunkMeshesToRefresh = new List<Chunk>();
+    int previousCount = 0;
 
     async void FixedUpdate()
     {
@@ -127,30 +134,47 @@ public class Map : MonoBehaviour
             //Task.Run(Run().ConfigureAwait(true));
             settingsUpdated = false;
         }
+    }
 
+    private void Update()
+    {
         UpdateChunkCollider();
     }
 
     void UpdateChunkCollider()
     {
-        if (chunkMeshesToRefresh.TryDequeue(out var chunk) && chunk.gameObject.activeSelf)
+        if (chunkMeshesToRefresh.Count != previousCount)
         {
-            //chunk.meshCollider.sharedMesh = null;
-            chunk.MainCollider.sharedMesh = chunk.Mesh;
-            //Debug.Log("CHunk Updated");
+            previousCount = chunkMeshesToRefresh.Count;
+            if (distanceSorter == null)
+            {
+                distanceSorter = new Chunk.DistanceSorter();
+                distanceSorter.Viewer = viewer;
+            }
+            chunkMeshesToRefresh.Sort(distanceSorter);
+        }
+        while (chunkMeshesToRefresh.Count > 0)
+        {
+            var chunk = chunkMeshesToRefresh[0];
+            chunkMeshesToRefresh.RemoveAt(0);
+            previousCount--;
+            if (chunk.gameObject.activeSelf)
+            {
+                chunk.MainCollider.sharedMesh = chunk.Mesh;
+                break;
+            }
         }
     }
-
-    /*async Task ExecuteRun()
-    {
-        await Run().Confi
-    }*/
 
     public async Task Run()
     {
 
         try
         {
+            if (brushShape.Count == 0)
+            {
+                InitBrush();
+            }
             CreateBuffers();
 
             await InitVisibleChunks();
@@ -180,13 +204,13 @@ public class Map : MonoBehaviour
         }
     }*/
 
-    void InitVariableChunkStructures()
+    /*void InitVariableChunkStructures()
     {
         recycleableChunks = new ConcurrentQueue<Chunk>();
         chunks = new List<Chunk>();
         existingChunks = new Dictionary<Vector3Int, Chunk>();
         chunkCoordsUsed = new HashSet<Vector3Int>();
-    }
+    }*/
 
 
     ConcurrentBag<Chunk> chunksToRender = new ConcurrentBag<Chunk>();
@@ -403,6 +427,8 @@ public class Map : MonoBehaviour
             }
 
             Array.Copy(pointCache, chunk.Points, numPoints);
+
+            chunk.PointsLoaded = true;
         }
         //PointsLoaded
 
@@ -429,7 +455,7 @@ public class Map : MonoBehaviour
 
         chunk.OnMeshUpdate();
 
-        chunkMeshesToRefresh.Enqueue(chunk);
+        chunkMeshesToRefresh.Add(chunk);
 
         ReturnBufferSet(bufferSet);
     }
@@ -478,7 +504,7 @@ public class Map : MonoBehaviour
         }
     }*/
 
-    Vector3Int PosToChunkIdx3D(Vector3Int p)
+    /*Vector3Int PosToChunkIdx3D(Vector3Int p)
     {
         return PosToChunkIdx3D(p.x, p.y, p.z);
     }
@@ -486,29 +512,161 @@ public class Map : MonoBehaviour
     {
         Vector3Int result = new Vector3Int(Mathf.FloorToInt(x / numPointsPerAxis), Mathf.FloorToInt(y / numPointsPerAxis), Mathf.FloorToInt(z / numPointsPerAxis));
         return result;
-    }
+    }*/
 
-    int PosToIndex(int x, int y, int z)
+    /*int PosToIndex(int x, int y, int z)
     {
         return z * numPointsPerAxis * numPointsPerAxis + y * numPointsPerAxis + x;
-    }
+    }*/
 
-    List<Chunk> updateList = new List<Chunk>();
+    ConcurrentDictionary<Chunk,byte> updateList = new ConcurrentDictionary<Chunk,byte>();
 
-    /*public void UseBrush(Vector3 point, bool EraseMode)
+    public void UseBrush(Vector3 worldPos, bool EraseMode)
     {
+        Vector3Int pos = new Vector3Int(Mathf.RoundToInt(worldPos.x), Mathf.RoundToInt(worldPos.y), Mathf.RoundToInt(worldPos.z));
+
+        //int samplesBelowIso = 0;
+        //int samplesAboveIso = 0;
+
         float brushValue = Time.deltaTime * brushSpeed * isoLevel;
+        if (EraseMode) brushValue *= -1;
+
+        float max = 1;
+
+        Parallel.For(0, brushShape.Count,i =>
+        {
+            var samplePoint = pos + ((Vector3)brushShape[i] / boundsSize);
+            //Debug.DrawLine(MainCamera.transform.position, samplePoint, Color.red, 10f);
+
+            var sample = SamplePoint(samplePoint);
+
+            if (!float.IsNaN(sample))
+            {
+                //var newValue = sample + (max - sample) * brushDist[i] * brushValue;
+                var newValue = sample + (brushDist[i] * brushDist[i] * brushValue);
+
+                //var newValue = Mathf.Lerp(sample,isoLevel * 2, brushDist[i] * brushValue);
+                //var newValue = 
+
+                //Debug.Log("NEW VALUE = " + newValue);
+
+                PaintPoint(samplePoint, newValue);
+            }
+
+
+            //
+
+            /*if (sample < isoLevel)
+            {
+                samplesBelowIso++;
+            }
+            else
+            {
+                //Debug.Log($"Sample At Point {samplePoint} = {sample}");
+                samplesAboveIso++;
+            }*/
+        });
+
+        /*for (int i = 0; i < brushShape.Count; i++)
+        {
+            var samplePoint = pos + ((Vector3)brushShape[i] / boundsSize);
+            Debug.DrawLine(MainCamera.transform.position,samplePoint,Color.red,10f);
+
+            var sample = SamplePoint(samplePoint);
+
+            PaintPoint(samplePoint,isoLevel + 1);
+
+
+            //
+
+            if (sample < isoLevel)
+            {
+                samplesBelowIso++;
+            }
+            else
+            {
+                //Debug.Log($"Sample At Point {samplePoint} = {sample}");
+                samplesAboveIso++;
+            }
+        }*/
+
+        //Debug.Log($"Samples Above Iso Level = {samplesAboveIso}");
+        //Debug.Log($"Samples Below Iso Level = {samplesBelowIso}");
+
+        //var camChunkPos = WorldPosToChunkPos(MainCamera.transform.position);
+        //var currentCameraChunk = GetChunkAtChunkPos(camChunkPos);
+
+        //samplesAboveIso = 0;
+        //samplesBelowIso = 0;
+
+        foreach (var (chunk,_) in updateList)
+        {
+            UpdateChunkMesh(chunk);
+
+            chunk.MainCollider.sharedMesh = chunk.Mesh;
+
+            //Debug.Log($"UPDATED CHUNK = {chunk.Position}");
+        }
+
+        updateList.Clear();
+
+        /*for (int x = 0; x < numPointsPerAxis; x++)
+        {
+            for (int y = 0; y < numPointsPerAxis; y++)
+            {
+                for (int z = 0; z < numPointsPerAxis; z++)
+                {
+                    var index = PointPosToIndex(new Vector3Int(x,y,z));
+                    if (currentCameraChunk.Points[index].value < isoLevel)
+                    {
+                        samplesBelowIso++;
+                    }
+                    else
+                    {
+                        samplesAboveIso++;
+
+
+                        var pointRelativePos = currentCameraChunk.Points[index].pos;
+                        float spacing = boundsSize / (numPointsPerAxis - 1);
+
+                        Vector3Int coord = currentCameraChunk.Position;
+                        Vector3 centre = CentreFromCoord(coord);
+
+
+                        //pointRelativePos = centre + (new Vector3(x, y, z) * spacing) - new Vector3(boundsSize / 2, boundsSize / 2, boundsSize / 2);
+
+                        var posOfPoint = (pointRelativePos - centre + new Vector3(boundsSize / 2, boundsSize / 2, boundsSize / 2)) / spacing;
+                        Debug.Log("POS OF ISO POINT = " + posOfPoint);
+                    }
+                }
+            }
+        }
+
+        Debug.Log("ABOVE_ISO = " + samplesAboveIso);
+        Debug.Log("BELOW_ISO = " + samplesBelowIso);*/
+
+        /*float brushValue = Time.deltaTime * brushSpeed * isoLevel;
         float max = 1;
         if (EraseMode) brushValue *= -1;
-        point *= numPointsPerAxis / boundsSize; // spacing
+        //point *= numPointsPerAxis / boundsSize; // spacing
         Vector3Int pos = new Vector3Int(Mathf.RoundToInt(point.x), Mathf.RoundToInt(point.y), Mathf.RoundToInt(point.z));
+
+        //Vector3Int pos = new Vector3Int();
+
+        Debug.DrawLine(MainCamera.transform.position,pos,Color.green,10f);
 
         Vector3Int pivotChunkIdx3d = PosToChunkIdx3D(pos); // 센터가 포함되어있는 청크의 인덱스.
                                                            //Task.Run (()=>
                                                            //{
+
+        Debug.Log("Pivot Chunk Value = " + pivotChunkIdx3d);
+
         for (int i = 0; i < brushShape.Count; i++)
         {
             Vector3Int p = pos + brushShape[i];
+
+            //Debug.DrawLine(MainCamera.transform.position, p, Color.magenta, 10f);
+
             //Vector3Int chunkIdx3d = p / numVoxelPerAxis;
 
             Vector3Int chunkIdx3d = PosToChunkIdx3D(p);
@@ -531,22 +689,185 @@ public class Map : MonoBehaviour
             {
                 updateList.Add(chunk);
             }
-            Vector3Int localPos = p - chunkIdx3d * numPointsPerAxis;
+            Vector3Int localPos = p - (chunkIdx3d * Mathf.RoundToInt(boundsSize));
+
+            Debug.DrawLine(MainCamera.transform.position,localPos + (chunk.Position * Mathf.RoundToInt(boundsSize)),Color.yellow, 10f);
+
+            //Debug.DrawLine(MainCamera.transform.position,localPos);
+
             int localIndex = PosToIndex(localPos.x, localPos.y, localPos.z);
-            float chunkValue = chunk.mapData[localIndex] + (max - chunk.mapData[localIndex]) * brushDist[i] * brushValue;
-            chunk.mapData[localIndex] = chunkValue;
-            SetNeighborChunk(localPos, chunkIdx3d, chunkValue);
+            //Debug.Log("OLD VALUE = " + chunk.Points[localIndex].value);
+            var oldValue = chunk.Points[localIndex].value;
+            //Debug.Log("Point Pos = " + chunk.Points[localIndex].pos);
+            //float chunkValue = chunk.Points[localIndex].value + (max - chunk.Points[localIndex].value) * brushDist[i] * brushValue;
+            //chunk.Points[localIndex].value = chunkValue;
+
+            chunk.Points[localIndex].value = chunk.Points[localIndex].value + brushValue;
+
+            var newValue = chunk.Points[localIndex].value;
+
+            if (oldValue != newValue)
+            {
+                Debug.Log($"Point {localPos} at Index {localIndex} changed to {newValue} in chunk {chunk.Position}");
+            }
+
+            SetNeighborChunk(localPos, chunkIdx3d, chunk.Points[localIndex].value);
+            //Debug.Log("NEW VALUE = " + chunk.Points[localIndex].value);
         }
         foreach (Chunk chunk in updateList)
         {
-            dataBuffer.SetData(chunk.mapData);
-            meshGenerator.March(chunk);
+            UpdateChunkMesh(chunk);
+            chunk.MainCollider.sharedMesh = chunk.Mesh;
+            //dataBuffer.SetData(chunk.mapData);
+            //meshGenerator.March(chunk);
         }
         updateList.Clear();
-        //});
+        //});*/
     }
 
-    public void SetNeighborChunk(Vector3Int localPos, Vector3Int chunkIdx3d, float value)
+    public void PaintPoint(Vector3 worldPosition, float value)
+    {
+        var chunkPos = WorldPosToChunkPos(worldPosition);
+        var chunk = GetChunkAtChunkPos(chunkPos);
+
+        if (chunk != null)
+        {
+            PaintPoint(chunk,WorldPosToPointPos(chunkPos, worldPosition),value);
+        }
+    }
+
+    public void PaintPoint(Chunk chunk, Vector3Int pointPosition, float value)
+    {
+        var index = PointPosToIndex(pointPosition);
+
+        chunk.Points[index].value = value;
+
+        /*if (!updateList.Contains(chunk))
+        {
+            updateList.Add(chunk);
+        }*/
+        updateList.TryAdd(chunk, 0);
+
+        SetNeighboringPoints(chunk, pointPosition, value);
+    }
+
+    public void SetNeighboringPoints(Chunk chunk, Vector3Int pointPosition, float value)
+    {
+        Vector3Int chunkPos = chunk.Position;
+        Vector3Int DI = Vector3Int.zero; // 대각일 경우 처리.
+        Vector3Int chunkPosTemp;
+        int cnt = 0;
+        int pointIndex = 0;
+
+        void SetData()
+        {
+            if (existingChunks.ContainsKey(chunkPosTemp) && pointIndex < numPointsInChunk && pointIndex >= 0)
+            {
+                chunk = existingChunks[chunkPosTemp];
+                chunk.Points[pointIndex].value = value;
+                //if (!updateList.Contains(chunk)) updateList.Add(chunk);
+                updateList.TryAdd(chunk,0);
+            }
+        }
+        if (pointPosition.x == numVoxelPerAxis)
+        {
+            cnt++;
+            DI.x++;
+            chunkPosTemp = chunkPos;
+            chunkPosTemp.x++;
+            //Debug.Log($"X+ Neighbor from {chunkPos} to {chunkPosTemp}");
+            pointIndex = PointPosToIndex(0, pointPosition.y, pointPosition.z);
+            SetData();
+        }
+        if (pointPosition.y == numVoxelPerAxis)
+        {
+            cnt++;
+            DI.y++;
+            chunkPosTemp = chunkPos;
+            chunkPosTemp.y++;
+            //Debug.Log($"Y+ Neighbor from {chunkPos} to {chunkPosTemp}");
+            pointIndex = PointPosToIndex(pointPosition.x, 0, pointPosition.z);
+
+            SetData();
+        }
+        if (pointPosition.z == numVoxelPerAxis)
+        {
+            cnt++;
+            DI.z++;
+            chunkPosTemp = chunkPos;
+            chunkPosTemp.z++;
+            //Debug.Log($"Z+ Neighbor from {chunkPos} to {chunkPosTemp}");
+            pointIndex = PointPosToIndex(pointPosition.x, pointPosition.y, 0);
+            SetData();
+        }
+
+        if (pointPosition.x == 0)
+        {
+            //Debug.Log("Point Position = " + pointPosition);
+            cnt++;
+            DI.x--;
+            chunkPosTemp = chunkPos;
+            chunkPosTemp.x--;
+            //Debug.Log($"X- Neighbor from {chunkPos} to {chunkPosTemp}");
+            pointIndex = PointPosToIndex(numVoxelPerAxis, pointPosition.y, pointPosition.z);
+            SetData();
+        }
+        if (pointPosition.y == 0)
+        {
+            cnt++;
+            DI.y--;
+            chunkPosTemp = chunkPos;
+            chunkPosTemp.y--;
+            //Debug.Log($"Y- Neighbor from {chunkPos} to {chunkPosTemp}");
+            pointIndex = PointPosToIndex(pointPosition.x, numVoxelPerAxis, pointPosition.z);
+            SetData();
+        }
+        if (pointPosition.z == 0)
+        {
+            cnt++;
+            DI.z--;
+            chunkPosTemp = chunkPos;
+            chunkPosTemp.z--;
+            //Debug.Log($"Z- Neighbor from {chunkPos} to {chunkPosTemp}");
+            pointIndex = PointPosToIndex(pointPosition.x, pointPosition.y, numVoxelPerAxis);
+            SetData();
+        }
+        if (cnt >= 2)
+        {
+            chunkPosTemp = chunkPos + DI;
+            int x = DI.x == 0 ? pointPosition.x : DI.x > 0 ? 0 : numVoxelPerAxis;
+            int y = DI.y == 0 ? pointPosition.y : DI.y > 0 ? 0 : numVoxelPerAxis;
+            int z = DI.z == 0 ? pointPosition.z : DI.z > 0 ? 0 : numVoxelPerAxis;
+            pointIndex = PointPosToIndex(x, y, z);
+
+            //Debug.Log($"Edge/Corner Neighbor from {chunkPos} to {chunkPosTemp}");
+            SetData();
+            if (cnt == 3)
+            {
+                //xy
+                chunkPosTemp.z = chunkPos.z;
+                pointIndex = PointPosToIndex(x, y, pointPosition.z);
+                SetData();
+                //Debug.Log($"XY Edge Neighbor from {chunkPos} to {chunkPosTemp}");
+
+                //yz
+                chunkPosTemp.z = chunkPos.z + DI.z;
+                chunkPosTemp.x = chunkPos.x;
+                pointIndex = PointPosToIndex(pointPosition.x, y, z);
+                SetData();
+                //Debug.Log($"YZ Edge Neighbor from {chunkPos} to {chunkPosTemp}");
+
+                //xz
+                chunkPosTemp.x = chunkPos.x + DI.x;
+                chunkPosTemp.y = chunkPos.y;
+                pointIndex = PointPosToIndex(x, pointPosition.y, z);
+                SetData();
+                //Debug.Log($"XZ Edge Neighbor from {chunkPos} to {chunkPosTemp}");
+            }
+        }
+    }
+
+    /*public void SetNeighborChunk(Vector3Int localPos, Vector3Int chunkIdx3d, float value)
     {
         Vector3Int DI = Vector3Int.zero; // 대각일 경우 처리.
         Vector3Int chunkIdx3d_Temp;
@@ -556,10 +877,10 @@ public class Map : MonoBehaviour
 
         void SetData()
         {
-            if (chunks.ContainsKey(chunkIdx3d_Temp) && localIndex < numPointsInChunk && localIndex >= 0)
+            if (existingChunks.ContainsKey(chunkIdx3d_Temp) && localIndex < numPointsInChunk && localIndex >= 0)
             {
-                chunk = chunks[chunkIdx3d_Temp];
-                chunk.mapData[localIndex] = value;
+                chunk = existingChunks[chunkIdx3d_Temp];
+                chunk.Points[localIndex].value = value;
                 if (!updateList.Contains(chunk)) updateList.Add(chunk);
             }
         }
@@ -649,7 +970,98 @@ public class Map : MonoBehaviour
         }
     }*/
 
-    /*List<Vector3Int> brushShape = new List<Vector3Int>();
+
+    public float SamplePoint(Vector3 worldPosition)
+    {
+        var chunkPos = WorldPosToChunkPos(worldPosition);
+        var chunk = GetChunkAtChunkPos(chunkPos);
+        //Debug.Log("CHUNK Pos = " + chunkPos);
+        //Debug.Log("POINT Pos = " + WorldPosToPointPos(chunkPos, worldPosition));
+        if (chunk == null)
+        {
+            return float.NaN;
+        }
+        else
+        {
+            return SamplePoint(chunk,WorldPosToPointPos(chunkPos, worldPosition));
+        }
+    }
+
+    public float SamplePoint(Chunk chunk, Vector3Int pointPosition)
+    {
+        var index = PointPosToIndex(pointPosition);
+
+        /*int numPoints = numPointsPerAxis * numPointsPerAxis * numPointsPerAxis;
+        //Debug.Log("Updating Chunk Mesh");
+        int numVoxelsPerAxis = numPointsPerAxis - 1;
+        int numThreadsPerAxis = Mathf.CeilToInt(numVoxelsPerAxis / (float)THREAD_GROUP_SIZE);
+        float pointSpacing = boundsSize / (numPointsPerAxis - 1);
+
+        Vector3Int coord = chunk.Position;
+        Vector3 centre = CentreFromCoord(coord);
+
+        Vector3 worldBounds = new Vector3(boundsSize, boundsSize, boundsSize);
+
+        //Debug.Log("Point POS_ = " + chunk.Points[index].pos);
+
+        chunk.Points[index].pos = centre + pointPosition * pointSpacing - boundsSize / 2;
+        */
+        return chunk.Points[index].value;
+    }
+
+    public Vector3Int WorldPosToChunkPos(Vector3 worldPos)
+    {
+        return new Vector3Int(Mathf.RoundToInt(worldPos.x / boundsSize), Mathf.RoundToInt(worldPos.y / boundsSize), Mathf.RoundToInt(worldPos.z / boundsSize));
+    }
+
+    public Vector3Int WorldPosToPointPos(Vector3Int chunkPos, Vector3 worldPos)
+    {
+        var halfBounds = boundsSize / 2;
+
+        //Range - (-5 , 5)
+        var relativePos = worldPos - ((Vector3)chunkPos * boundsSize);
+
+        //Range - (-0.5f , 0.5f)
+        relativePos /= boundsSize;
+
+        //Range - (0f, 30f)
+        var pointPos = new Vector3(Mathf.Lerp(0f, numVoxelPerAxis,relativePos.x + 0.5f), Mathf.Lerp(0f, numVoxelPerAxis, relativePos.y + 0.5f), Mathf.Lerp(0f, numVoxelPerAxis, relativePos.z + 0.5f));
+
+        var finalPos = new Vector3Int(Mathf.RoundToInt(pointPos.x), Mathf.RoundToInt(pointPos.y), Mathf.RoundToInt(pointPos.z));
+
+        return finalPos;
+        //Clamping to a local chunk
+        /*worldPos = new Vector3(((worldPos.x + halfBounds) % boundsSize) - halfBounds, ((worldPos.y + halfBounds) % boundsSize) - halfBounds, ((worldPos.z + halfBounds) % boundsSize) - halfBounds);
+
+        //Clamping to range 0 to numVoxelPerAxis (0 - 29)
+        worldPos = new Vector3(Mathf.Lerp(0,numVoxelPerAxis, (worldPos.x / boundsSize) + 0.5f), Mathf.Lerp(0, numVoxelPerAxis, (worldPos.y / boundsSize) + 0.5f), Mathf.Lerp(0, numVoxelPerAxis, (worldPos.z / boundsSize) + 0.5f));
+
+        return new Vector3Int(Mathf.RoundToInt(worldPos.x), Mathf.RoundToInt(worldPos.y), Mathf.RoundToInt(worldPos.z));*/
+    }
+
+    public Chunk GetChunkAtChunkPos(Vector3Int chunkPos)
+    {
+        if (existingChunks.TryGetValue(chunkPos, out var chunk))
+        {
+            return chunk;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public int PointPosToIndex(Vector3Int pointPos)
+    {
+        return PointPosToIndex(pointPos.x, pointPos.y, pointPos.z);
+    }
+
+    public int PointPosToIndex(int x, int y, int z)
+    {
+        return (z * numPointsPerAxis * numPointsPerAxis) + (y * numPointsPerAxis) + x;
+    }
+
+    List<Vector3Int> brushShape = new List<Vector3Int>();
     List<float> brushDist = new List<float>();
     void InitBrush()
     {
@@ -658,11 +1070,26 @@ public class Map : MonoBehaviour
 
         float spacing = boundsSize / (numPointsPerAxis - 1);
         int brushSize_relative = Mathf.CeilToInt(brushSize / spacing);
+        //int brushSize_relative = 
+
+        /*var sideSize = brushSize_relative - 1;
+
+        Parallel.For(-brushSize_relative, brushSize_relative, i =>
+        {
+            for (int j = -brushSize_relative; j < brushSize_relative; j++)
+                for (int k = -brushSize_relative; k < brushSize_relative; k++)
+                    if (Mathf.Sqrt(i * i + j * j + k * k) <= brushSize_relative)
+                        brushShape.Add(new Vector3Int(i, j, k));
+        });*/
+
         for (int i = -brushSize_relative; i < brushSize_relative; i++)
             for (int j = -brushSize_relative; j < brushSize_relative; j++)
                 for (int k = -brushSize_relative; k < brushSize_relative; k++)
                     if (Mathf.Sqrt(i * i + j * j + k * k) <= brushSize_relative)
                         brushShape.Add(new Vector3Int(i, j, k));
+
+
+
 
         brushShape.Sort((A, B) =>
         {
@@ -673,8 +1100,8 @@ public class Map : MonoBehaviour
             brushDist.Add(brushSize_relative - brushShape[i].magnitude);
         }
 
-        shader.SetInt(CSPARAM.brushSize, brushSize);
-    }*/
+        //generatorShader.SetInt("brushSize", brushSize);
+    }
 
     void CreateBuffers()
     {
