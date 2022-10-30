@@ -1,6 +1,6 @@
 static const int numThreads = 8;
 
-RWStructuredBuffer<float4> points;
+RWStructuredBuffer<float> points;
 int numPointsPerAxis;
 float boundsSize;
 float3 centre;

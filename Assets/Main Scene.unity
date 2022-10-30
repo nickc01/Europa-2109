@@ -731,5 +731,8 @@ MonoBehaviour:
   numPointsPerAxis: 30
   showBoundsGizmo: 1
   boundsGizmoCol: {r: 1, g: 1, b: 1, a: 1}
-  brushSpeed: 0.01
-  brushSize: 10
+  sphereBrushSpeed: 0.01
+  sphereBrushSize: 1.5
+  sphereBrushShader: {fileID: 7200000, guid: ab648f693fc5c5a4e8804334a56d4a57, type: 3}
+  cubeBrushSize: {x: 3, y: 3, z: 3}
+  cubeBrushSpeed: 1

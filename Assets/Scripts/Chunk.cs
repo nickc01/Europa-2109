@@ -41,7 +41,7 @@ public class Chunk : MonoBehaviour
     public MeshRenderer MainRenderer { get; private set; }
     public MeshCollider MainCollider { get; private set; }
 
-    public ChunkPoint[] Points { get; set; }
+    public float[] Points { get; set; }
 
     private bool generateCollider;
 
@@ -141,7 +141,7 @@ public class Chunk : MonoBehaviour
     {
         if (Points == null)
         {
-            Points = new ChunkPoint[SourceMap.PointsPerChunk];
+            Points = new float[SourceMap.PointsPerChunk];
         }
 
         /*for (int i = 0; i < 50; i++)
