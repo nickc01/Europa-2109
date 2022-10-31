@@ -403,6 +403,8 @@ public class Map : MonoBehaviour
     Triangle[] triangleCache;
     float[] pointCache;
 
+    float[] sampleBuffer;
+
     void UpdateChunkMesh(Chunk chunk, BufferSet bufferSet = null, bool pointsAlreadySet = false)
     {
         int numPoints = numPointsPerAxis * numPointsPerAxis * numPointsPerAxis;
@@ -480,7 +482,17 @@ public class Map : MonoBehaviour
             Array.Copy(pointCache, chunk.Points, numPoints);
 
             chunk.PointsLoaded = true;
+
+            sampleBuffer = pointCache;
         }
+        else
+        {
+            sampleBuffer = chunk.Points;
+        }
+        /*else
+        {
+            pointCache = chunk.Points;
+        }*/
         //PointsLoaded
 
 
@@ -507,6 +519,33 @@ public class Map : MonoBehaviour
         mesh.vertices = vertices;
         mesh.triangles = meshTriangles;
 
+        //List<Vector3> normals = new List<Vector3>();
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            //Presumes the vertex is in local space where
+            //the min value is 0 and max is width/height/depth.
+            /*Vector3 p = vertices[i];
+
+            float u = p.x / (numPointsPerAxis - 1.0f);
+            float v = p.y / (numPointsPerAxis - 1.0f);
+            float w = p.z / (numPointsPerAxis - 1.0f);
+
+            Vector3 n = GetNormal(u, v, w);*/
+
+            /*float step = 0.01; // or whatever
+            Vector3 nrm = default;
+            nrm.x = F(p + Vector3(step, 0, 0)) - F(p - Vector3(step, 0, 0));
+            nrm.y = F(p + Vector3(0, step, 0)) - F(p - Vector3(0, step, 0));
+            nrm.z = F(p + Vector3(0, 0, step)) - F(p - Vector3(0, 0, step));
+            nrm = normalize(nrm);*/
+
+            //normals.Add(n.normalized);
+        }
+
+        //mesh.normals = normals.ToArray();
+        //mesh.normal
+
         mesh.RecalculateNormals();
         //mesh.Optimize();
 
@@ -515,6 +554,93 @@ public class Map : MonoBehaviour
         chunkMeshesToRefresh.Add(chunk);
 
         ReturnBufferSet(bufferSet);
+    }
+
+    /*float F()
+    {
+
+    }*/
+
+    private static float Lerp(float v0, float v1, float t)
+    {
+        return v0 + (v1 - v0) * t;
+    }
+
+    private static float BLerp(float v00, float v10, float v01, float v11, float tx, float ty)
+    {
+        return Lerp(Lerp(v00, v10, tx), Lerp(v01, v11, tx), ty);
+    }
+
+    public float GetVoxel(int x, int y, int z)
+    {
+        x = Mathf.Clamp(x, 0, numPointsPerAxis - 1);
+        y = Mathf.Clamp(y, 0, numPointsPerAxis - 1);
+        z = Mathf.Clamp(z, 0, numPointsPerAxis - 1);
+        return sampleBuffer[PointPosToIndex(x,y,z)];
+    }
+
+    public float GetVoxel(float u, float v, float w)
+    {
+        float x = u * (numPointsPerAxis - 1);
+        float y = v * (numPointsPerAxis - 1);
+        float z = w * (numPointsPerAxis - 1);
+
+        int xi = (int)Mathf.Floor(x);
+        int yi = (int)Mathf.Floor(y);
+        int zi = (int)Mathf.Floor(z);
+
+        float v000 = GetVoxel(xi, yi, zi);
+        float v100 = GetVoxel(xi + 1, yi, zi);
+        float v010 = GetVoxel(xi, yi + 1, zi);
+        float v110 = GetVoxel(xi + 1, yi + 1, zi);
+
+        float v001 = GetVoxel(xi, yi, zi + 1);
+        float v101 = GetVoxel(xi + 1, yi, zi + 1);
+        float v011 = GetVoxel(xi, yi + 1, zi + 1);
+        float v111 = GetVoxel(xi + 1, yi + 1, zi + 1);
+
+        float tx = Mathf.Clamp01(x - xi);
+        float ty = Mathf.Clamp01(y - yi);
+        float tz = Mathf.Clamp01(z - zi);
+
+        //use bilinear interpolation the find these values.
+        float v0 = BLerp(v000, v100, v010, v110, tx, ty);
+        float v1 = BLerp(v001, v101, v011, v111, tx, ty);
+
+        //Now lerp those values for the final trilinear interpolation.
+        return Lerp(v0, v1, tz);
+    }
+
+    public Vector3 GetNormal(float u, float v, float w)
+    {
+        var n = GetFirstDerivative(u, v, w);
+
+        return n.normalized * -1;
+        /*if (FlipNormals)
+            return n.normalized * -1;
+        else
+            return n.normalized;*/
+    }
+
+    public Vector3 GetFirstDerivative(float u, float v, float w)
+    {
+        const float h = 0.005f;
+        const float hh = h * 0.5f;
+        const float ih = 1.0f / h;
+
+        float dx_p1 = GetVoxel(u + hh, v, w);
+        float dy_p1 = GetVoxel(u, v + hh, w);
+        float dz_p1 = GetVoxel(u, v, w + hh);
+
+        float dx_m1 = GetVoxel(u - hh, v, w);
+        float dy_m1 = GetVoxel(u, v - hh, w);
+        float dz_m1 = GetVoxel(u, v, w - hh);
+
+        float dx = (dx_p1 - dx_m1) * ih;
+        float dy = (dy_p1 - dy_m1) * ih;
+        float dz = (dz_p1 - dz_m1) * ih;
+
+        return new Vector3(dx, dy, dz);
     }
 
     public void UpdateAllChunks()
@@ -658,9 +784,9 @@ public class Map : MonoBehaviour
         chunkUpdateCount = 0;
     }
 
-    public void UseSphereBrush(Vector3 worldPos, bool EraseMode)
+    public void UseSphereBrush(Vector3 worldPos, bool EraseMode, float intensity)
     {
-        UseSphereBrushCPU(worldPos, EraseMode);
+        UseSphereBrushCPU(worldPos, EraseMode, intensity);
     }
 
     float CubicLength(Vector3Int value)
@@ -750,10 +876,11 @@ public class Map : MonoBehaviour
 
 
 
-    public void UseSphereBrushCPU(Vector3 worldPos, bool EraseMode)
+    public void UseSphereBrushCPU(Vector3 worldPos, bool EraseMode, float intensity)
     {
         float3 pos = worldPos;
-        float brushValue = Time.fixedDeltaTime * sphereBrushSpeed * isoLevel;
+        //float brushValue = Time.fixedDeltaTime * sphereBrushSpeed * isoLevel;
+        float brushValue = intensity * sphereBrushSpeed * isoLevel;
         if (EraseMode) brushValue *= -1;
 
         var width = sphereBrushPointSize * 2;
@@ -970,7 +1097,6 @@ public class Map : MonoBehaviour
 
     public bool FireRayParallel(float3 source, float3 direction, out float3 hit, float maxDistance = 20f, float stepAmount = 0.25f)
     {
-
         float3 travelDirection = normalize(direction) * stepAmount;
         int increments = (int)(maxDistance / stepAmount);
         if (sampleCache == null || sampleCache.Length < increments)
@@ -998,43 +1124,7 @@ public class Map : MonoBehaviour
 
         hit = default;
         return false;
-
-        /*float3 hitPosition = source;
-        float3 travelDirection = normalize(direction) * stepAmount;
-        float value = 0;
-
-        float distanceTravelled = 0f;
-
-        do
-        {
-            value = SamplePoint(hitPosition);
-            if (float.IsNaN(value))
-            {
-                break;
-            }
-            if (value >= isoLevel)
-            {
-                hit = hitPosition;
-                return true;
-            }
-
-            hitPosition = hitPosition + travelDirection;
-            distanceTravelled += stepAmount;
-
-        } while (distanceTravelled <= maxDistance);
-
-        hit = default;
-        return false;*/
     }
-
-    /*static unsafe TDest ReinterpretCast<TSource, TDest>(TSource source)
-    {
-        var sourceRef = __makeref(source);
-        var dest = default(TDest);
-        var destRef = __makeref(dest);
-        *(IntPtr*)&destRef = *(IntPtr*)&sourceRef;
-        return __refvalue(destRef, TDest);
-    }*/
 
     public void SetNeighboringPoints(Chunk chunk, int3 pointPosition, float value)
     {
@@ -1048,20 +1138,6 @@ public class Map : MonoBehaviour
 
         void SetData()
         {
-            /*for (int i = chunks.Count - 1; i >= 0; i--)
-            {
-                var other = chunks[i];
-                var otherPos = ReinterpretCast<Vector3Int, int3>(other.Position);
-                if (otherPos.x == chunkPos.x && otherPos.y == chunkPos.y && otherPos.z == chunkPos.z && pointIndex < numPointsInChunk && pointIndex >= 0)
-                //if ( && pointIndex < numPointsInChunk && pointIndex >= 0)
-                {
-                    chunk = existingChunks[new Vector3Int(chunkPosTemp.x, chunkPosTemp.y, chunkPosTemp.z)];
-                    chunk.Points[pointIndex] = value;
-                    //if (!updateList.Contains(chunk)) updateList.Add(chunk);
-                    AddChunkToBeUpdated(chunk);
-                    break;
-                }
-            }*/
 
             if (existingChunks.TryGetValue(new Vector3Int(chunkPosTemp.x, chunkPosTemp.y, chunkPosTemp.z),out var chunk) && pointIndex < numPointsInChunk && pointIndex >= 0)
             {
@@ -1069,12 +1145,6 @@ public class Map : MonoBehaviour
                 //if (!updateList.Contains(chunk)) updateList.Add(chunk);
                 AddChunkToBeUpdated(chunk);
             }
-
-            /*if (existingChunks.ContainsKey(new Vector3Int(chunkPosTemp.x, chunkPosTemp.y, chunkPosTemp.z)) && pointIndex < numPointsInChunk && pointIndex >= 0)
-            {
-                chunk = existingChunks[new Vector3Int(chunkPosTemp.x, chunkPosTemp.y, chunkPosTemp.z)];
-
-            }*/
         }
         if (pointPosition.x == numVoxelPerAxis)
         {

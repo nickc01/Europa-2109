@@ -117,12 +117,17 @@ public class Chunk : MonoBehaviour
     {
         var folder = Application.persistentDataPath + $"/{SourceMap.WorldName}";
         await Task.Run(() => ReadPointData(folder));
+
+
+        //TODO - Generate Other Objects
     }
 
     private async Task ChunkEnd()
     {
         var folder = Application.persistentDataPath + $"/{SourceMap.WorldName}";
         await Task.Run(() => WritePointData(folder));
+
+        //TODO - Delete Other Objects
     }
 
     void WritePointData(string folder)
@@ -143,11 +148,6 @@ public class Chunk : MonoBehaviour
         {
             Points = new float[SourceMap.PointsPerChunk];
         }
-
-        /*for (int i = 0; i < 50; i++)
-        {
-            Debug.Log("Demo Point Before = " + Points[i].value);
-        }*/
 
         var bytes = MemoryMarshal.AsBytes(Points.AsSpan());
 

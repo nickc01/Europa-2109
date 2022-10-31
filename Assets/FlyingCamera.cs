@@ -7,10 +7,13 @@ public class FlyingCamera : MonoBehaviour
     Rigidbody rb;
 
     [SerializeField]
-    float rotationSpeed = 15f;
+    float rotationSpeed = 7f;
 
     [SerializeField]
-    float acceleration = 20f;
+    float rotationInterpolationSpeed = 7f;
+
+    [SerializeField]
+    float acceleration = 10f;
 
     [SerializeField]
     float velocityLimit = 20f;
@@ -21,16 +24,57 @@ public class FlyingCamera : MonoBehaviour
     [SerializeField]
     Map map;
 
+    Quaternion targetRotation;
+
+    Vector3 oldMousePosition;
+
+    [field: SerializeField]
+    public bool UseMouseControls { get; private set; } = true;
+
     // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        targetRotation = transform.rotation;
+        oldMousePosition = Input.mousePosition;
+        Cursor.lockState = CursorLockMode.Locked;
+        targetRotation = transform.rotation;
     }
 
+    bool inFocus = false;
+
     // Update is called once per frame
-    void FixedUpdate()
+    void Update()
     {
-        var rotation = transform.localRotation;
+        if (inFocus)
+        {
+            var mousePos = Input.mousePosition;
+            var mouseDT = mousePos - oldMousePosition;
+            oldMousePosition = mousePos;
+
+            //Debug.Log("MousePos = " + new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")));
+
+            //targetRotation = Quaternion.AngleAxis(mouseDT.x * rotationSpeed * Time.fixedDeltaTime, Vector3.up) * Quaternion.AngleAxis(-mouseDT.y * rotationSpeed * Time.fixedDeltaTime, Vector3.right) * targetRotation;
+            //targetRotation.z = 0;
+            //targetRotation = Quaternion.Euler(-mouseDT.y * rotationSpeed * Time.fixedDeltaTime, mouseDT.x * rotationSpeed * Time.fixedDeltaTime,0f) * targetRotation;
+
+            //transform.rotation = targetRotation;
+            //transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationInterpolationSpeed * Time.fixedDeltaTime);
+
+            //transform.rotation = Quaternion.Euler(-Input.mousePosition.y * rotationSpeed * Time.fixedDeltaTime, -Input.mousePosition.x * rotationSpeed * Time.fixedDeltaTime, 0f);
+            targetRotation = Quaternion.Euler(targetRotation.eulerAngles.x + (-Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime), targetRotation.eulerAngles.y + (Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime), 0f);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationInterpolationSpeed * Time.deltaTime);
+
+            rb.velocity += transform.TransformVector(Vector3.forward * acceleration * Input.GetAxis("Vertical") * Time.deltaTime);
+            rb.velocity += transform.TransformVector(Vector3.right * acceleration * Input.GetAxis("Horizontal") * Time.deltaTime);
+
+            if (rb.velocity.magnitude >= velocityLimit)
+            {
+                rb.velocity = rb.velocity.normalized * velocityLimit;
+            }
+        }
+
+        /*var rotation = transform.localRotation;
 
         if (Input.GetKey(KeyCode.LeftShift))
         {
@@ -48,68 +92,44 @@ public class FlyingCamera : MonoBehaviour
             {
                 rb.velocity = rb.velocity.normalized * velocityLimit;
             }
-        }
-
-        if (Input.GetKey(KeyCode.Mouse0))
-        {
-            UseBrush(false);
-        }
-        else if (Input.GetKey(KeyCode.Mouse1))
-        {
-            UseBrush(true);
-        }
+        }*/
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
-        //if (Input.GetKeyDown(KeyCode.Mouse0)) StartCoroutine(UseBrush(KeyCode.Mouse0, false));
-        //if (Input.GetKeyDown(KeyCode.Mouse1)) StartCoroutine(UseBrush(KeyCode.Mouse1, true));
+        if (inFocus)
+        {
+            if (Input.GetKey(KeyCode.Mouse0))
+            {
+                UseBrush(new Vector2(Screen.width / 2f, Screen.height / 2f), false);
+            }
+            else if (Input.GetKey(KeyCode.Mouse1))
+            {
+                UseBrush(new Vector2(Screen.width / 2f, Screen.height / 2f), true);
+            }
+        }
     }
 
-    void UseBrush(bool eraseMode)
+    private void OnApplicationFocus(bool focus)
+    {
+        inFocus = focus;
+    }
+
+    void UseBrush(Vector2 screenPosition, bool eraseMode)
     {
         var sample = map.SamplePoint(transform.position);
         if (sample < map.isoLevel)
         {
-            //Vector2 input = new Vector2(Screen.width / 2.0f, Screen.height / 2.0f);
-            Vector2 input = Input.mousePosition;
-            Ray ray = map.MainCamera.ScreenPointToRay(input);
+            Ray ray = map.MainCamera.ScreenPointToRay(screenPosition);
 
-            //if (Physics.RaycastNonAlloc(ray, hits, 300) > 0)// && !hit.collider.tag.Equals("Untagged"))
             if (map.FireRayParallel(ray,out var hit,10f,map.boundsSize / map.numPointsPerAxis))
             {
-                //Debug.DrawLine(transform.position, hit, Color.red, 10f);
                 var distance = Vector3.Distance(transform.position, hit);
                 if (distance >= map.SphereBrushSize / 2f && distance <= 10f)
                 {
-                    map.UseSphereBrush(hit, eraseMode);
+                    map.UseSphereBrush(hit, eraseMode, Time.fixedDeltaTime);
                 }
-                //PointIndicator.position = hit.point;
             }
         }
     }
-
-    RaycastHit[] hits = new RaycastHit[1];
-
-    /*IEnumerator UseBrush(KeyCode inputKey, bool eraseMode)
-    {
-        var sample = map.SamplePoint(transform.position);
-        Debug.Log("CURRENT POS SAMPLE = " + sample);
-        if (sample <= map.isoLevel)
-        {
-            Vector2 input = new Vector2(Screen.width / 2.0f, Screen.height / 2.0f);
-            while (Input.GetKey(inputKey))
-            {
-                Ray ray = map.MainCamera.ScreenPointToRay(input);
-
-                if (Physics.RaycastNonAlloc(ray, hits, 300) > 0 && Vector3.Distance(transform.position, hits[0].point) >= map.SphereBrushSize / 2f)
-                {
-                    //PointIndicator.position = hit.point;
-                    Debug.DrawLine(transform.position, hits[0].point, Color.red, 10f);
-                    map.UseSphereBrush(hits[0].point, eraseMode);
-                }
-                yield return null;
-            }
-        }
-    }*/
 }
