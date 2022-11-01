@@ -430,7 +430,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 895335290}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalPosition: {x: 0, y: 30, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -863,24 +863,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e6b546e05ba1e540bea011516df60b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  <WorldName>k__BackingField: default
   <MainCamera>k__BackingField: {fileID: 895335292}
   <DensityGenerator>k__BackingField: {fileID: 203111553}
   viewer: {fileID: 895335293}
   <ViewDistance>k__BackingField: 30
-  generatorShader: {fileID: 7200000, guid: e6675a5747764487687871eed95a316b, type: 3}
-  <ChunkMateral>k__BackingField: {fileID: 2100000, guid: 9f4c41034b0a0402ebc0112bf6b727f1, type: 2}
+  <GeneratorShader>k__BackingField: {fileID: 7200000, guid: e6675a5747764487687871eed95a316b, type: 3}
+  <ChunkMaterial>k__BackingField: {fileID: 2100000, guid: 9f4c41034b0a0402ebc0112bf6b727f1, type: 2}
   generateColliders: 1
-  isoLevel: 12
-  boundsSize: 10
-  offset: {x: 0, y: 0, z: 0}
-  numPointsPerAxis: 30
+  <IsoLevel>k__BackingField: 12
+  <BoundsSize>k__BackingField: 10
+  <NumPointsPerAxis>k__BackingField: 30
   showBoundsGizmo: 1
   boundsGizmoCol: {r: 1, g: 1, b: 1, a: 1}
-  sphereBrushSpeed: 0.01
+  <SphereBrushSpeed>k__BackingField: 0.01
   sphereBrushSize: 2
   sphereBrushShader: {fileID: 7200000, guid: ab648f693fc5c5a4e8804334a56d4a57, type: 3}
-  cubeBrushSize: {x: 3, y: 3, z: 3}
-  cubeBrushSpeed: 1
+  <CubeBrushSize>k__BackingField: {x: 3, y: 3, z: 3}
+  <CubeBrushSpeed>k__BackingField: 1
 --- !u!1 &1993255524
 GameObject:
   m_ObjectHideFlags: 0

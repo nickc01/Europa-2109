@@ -4,11 +4,21 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
 public class Chunk : MonoBehaviour
 {
+    public enum LoadingState
+    {
+        Unloaded,
+        UnloadedCached,
+        Loading,
+        Loaded,
+        Unloading
+    }
+
     /// <summary>
     /// Sorts chunks based on how close they are to the viewer
     /// </summary>
@@ -32,6 +42,12 @@ public class Chunk : MonoBehaviour
         }
     }
 
+    public LoadingState State { get; private set; } = LoadingState.Unloaded;
+
+    /// <summary>
+    /// Keeps this chunk loaded at all times.
+    /// </summary>
+    public bool KeepLoaded { get; set; } = false;
 
     public Vector3Int Position;
     public Map SourceMap { get; set; }
@@ -46,6 +62,8 @@ public class Chunk : MonoBehaviour
     private bool generateCollider;
 
     public bool PointsLoaded = false;
+
+    object loadLock = new object();
 
     private void Awake()
     {
@@ -75,9 +93,18 @@ public class Chunk : MonoBehaviour
         MainCollider = GetComponent<MeshCollider>();
     }
 
+    public Map.ChunkGenerationParameters ChunkGenerationParameters()
+    {
+        return new Map.ChunkGenerationParameters
+        {
+            IsoOffsetByHeight = 0.1f,
+            IsoOffset = 0
+        };
+    }
+
     // Add components/get references in case lost (references can be lost when working in the editor)
     //public async Task Init(Material mat, bool generateCollider, bool cached)
-    public async Task Init(Map map, bool cached)
+    public async Task<bool> Init(Map map, bool cached)
     {
         gameObject.SetActive(true);
         generateCollider = map.generateColliders;
@@ -99,9 +126,9 @@ public class Chunk : MonoBehaviour
             MainCollider.sharedMesh = Mesh;
         }
 
-        MainRenderer.material = map.ChunkMateral;
+        MainRenderer.material = map.ChunkMaterial;
 
-        await ChunkStart(cached);
+        return await ChunkStart(cached);
     }
 
     public async Task Uninit()
@@ -113,20 +140,69 @@ public class Chunk : MonoBehaviour
         PointsLoaded = false;
     }
 
-    private async Task ChunkStart(bool cached)
+    private async Task<bool> ChunkStart(bool cached)
     {
-        var folder = Application.persistentDataPath + $"/{SourceMap.WorldName}";
-        await Task.Run(() => ReadPointData(folder));
+        /*lock (loadLock)
+        {
+            if (!(State == LoadingState.Unloaded || State == LoadingState.UnloadedCached))
+            {
+                return false;
+            }
+            State = LoadingState.Loading;
+        }*/
 
+
+        try
+        {
+            Monitor.Enter(loadLock);
+            if (!(State == LoadingState.Unloaded || State == LoadingState.UnloadedCached))
+            {
+                return false;
+            }
+            State = LoadingState.Loading;
+            var folder = Application.persistentDataPath + $"/{SourceMap.WorldName}";
+            await Task.Run(() => ReadPointData(folder));
+            State = LoadingState.Loaded;
+        }
+        finally
+        {
+            Monitor.Exit(loadLock);
+        }
+
+        return true;
 
         //TODO - Generate Other Objects
     }
 
-    private async Task ChunkEnd()
+    private async Task<bool> ChunkEnd()
     {
-        var folder = Application.persistentDataPath + $"/{SourceMap.WorldName}";
-        await Task.Run(() => WritePointData(folder));
+        /*lock (loadLock)
+        {
+            if (State != LoadingState.Loaded)
+            {
+                return false;
+            }
+            State = LoadingState.Unloading;
+        }*/
+        try
+        {
+            Monitor.Enter(loadLock);
+            if (State != LoadingState.Loaded)
+            {
+                return false;
+            }
+            State = LoadingState.Unloading;
+            var folder = Application.persistentDataPath + $"/{SourceMap.WorldName}";
+            await Task.Run(() => WritePointData(folder));
 
+            State = LoadingState.UnloadedCached;
+        }
+        finally
+        {
+            Monitor.Exit(loadLock);
+        }
+
+        return true;
         //TODO - Delete Other Objects
     }
 

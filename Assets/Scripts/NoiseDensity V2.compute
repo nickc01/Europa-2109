@@ -14,6 +14,10 @@ float weightMultiplier;
 bool closeEdges;
 float hardFloor;
 float hardFloorWeight;
+float isoLevel;
+float isoOffset;
+float isoOffsetByHeight;
+int3 chunkPosition;
 
 
 
@@ -46,11 +50,12 @@ void Density(int3 id : SV_DispatchThreadID)
     }
 
     //float finalVal = -(pos.y + floorOffset) + noise * noiseWeight + (pos.y % params.x) * params.y;
-    float finalVal = -(floorOffset) + noise * noiseWeight * params.y;
+    //float finalVal = clamp(-(floorOffset)+noise * noiseWeight * params.y, isoLevel - 2, isoLevel + 2);
+    float finalVal = (-(floorOffset)+noise * noiseWeight * params.y) + isoOffset + (isoOffsetByHeight * (id.y + (chunkPosition.y * (numPointsPerAxis - 1))));
 
-    if (pos.y < hardFloor) {
+    /*if (pos.y < hardFloor) {
         finalVal += hardFloorWeight;
-    }
+    }*/
 
     /*if (closeEdges) {
         float3 edgeOffset = abs(pos * 2) - worldSize + spacing / 2;

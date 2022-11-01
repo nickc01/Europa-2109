@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 
 public class FlyingCamera : MonoBehaviour
@@ -62,7 +63,32 @@ public class FlyingCamera : MonoBehaviour
             //transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationInterpolationSpeed * Time.fixedDeltaTime);
 
             //transform.rotation = Quaternion.Euler(-Input.mousePosition.y * rotationSpeed * Time.fixedDeltaTime, -Input.mousePosition.x * rotationSpeed * Time.fixedDeltaTime, 0f);
-            targetRotation = Quaternion.Euler(targetRotation.eulerAngles.x + (-Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime), targetRotation.eulerAngles.y + (Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime), 0f);
+            //targetRotation = Quaternion.Euler(Mathf.Clamp(targetRotation.eulerAngles.x + (-Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime),-89f,89f), targetRotation.eulerAngles.y + (Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime), 0f);
+
+            var xRotation = targetRotation.eulerAngles.x + (-Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime);
+
+            /*if (xRotation > 180f)
+            {
+                xRotation -= 360f;
+            }
+            else if (xRotation < 180f)
+            {
+                xRotation += 360f;
+            }
+
+            if (xRotation < -80f && xRotation < -89f)
+            {
+                xRotation = -89f;
+                Debug.Log("Less Than");
+            }
+            else if (xRotation > 80f && xRotation > 89f)
+            {
+                Debug.Log("XRotation = " + xRotation);
+                xRotation = 89f;
+                Debug.Log("Greater Than");
+            }*/
+
+            targetRotation = Quaternion.Euler(xRotation, targetRotation.eulerAngles.y + (Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime), 0f);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationInterpolationSpeed * Time.deltaTime);
 
             rb.velocity += transform.TransformVector(Vector3.forward * acceleration * Input.GetAxis("Vertical") * Time.deltaTime);
@@ -118,11 +144,11 @@ public class FlyingCamera : MonoBehaviour
     void UseBrush(Vector2 screenPosition, bool eraseMode)
     {
         var sample = map.SamplePoint(transform.position);
-        if (sample < map.isoLevel)
+        if (sample < map.IsoLevel)
         {
             Ray ray = map.MainCamera.ScreenPointToRay(screenPosition);
 
-            if (map.FireRayParallel(ray,out var hit,10f,map.boundsSize / map.numPointsPerAxis))
+            if (map.FireRayParallel(ray,out var hit,10f,map.BoundsSize / map.NumPointsPerAxis))
             {
                 var distance = Vector3.Distance(transform.position, hit);
                 if (distance >= map.SphereBrushSize / 2f && distance <= 10f)

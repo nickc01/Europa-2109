@@ -20,7 +20,7 @@ public class NoiseDensity : MapGenerator {
 
     public Vector4 shaderParams;
 
-    public override ComputeBuffer Generate (ComputeBuffer pointsBuffer, int numPointsPerAxis, float boundsSize, Vector3 worldBounds, Vector3 centre, Vector3 offset, float spacing) {
+    public override ComputeBuffer Generate (ComputeBuffer pointsBuffer, int numPointsPerAxis, float boundsSize, Vector3 worldBounds, Vector3 centre, Vector3 offset, float spacing, Map map, Chunk chunk) {
         buffersToRelease = new List<ComputeBuffer> ();
 
         // Noise parameters
@@ -35,7 +35,10 @@ public class NoiseDensity : MapGenerator {
         offsetsBuffer.SetData (offsets);
         buffersToRelease.Add (offsetsBuffer);
 
+        var chunkParams = chunk.ChunkGenerationParameters();
+
         densityShader.SetVector ("centre", new Vector4 (centre.x, centre.y, centre.z));
+        densityShader.SetInts ("chunkPosition", chunk.Position.x, chunk.Position.y, chunk.Position.z);
         densityShader.SetInt ("octaves", Mathf.Max (1, numOctaves));
         densityShader.SetFloat ("lacunarity", lacunarity);
         densityShader.SetFloat ("persistence", persistence);
@@ -47,9 +50,12 @@ public class NoiseDensity : MapGenerator {
         densityShader.SetFloat ("weightMultiplier", weightMultiplier);
         densityShader.SetFloat ("hardFloor", hardFloorHeight);
         densityShader.SetFloat ("hardFloorWeight", hardFloorWeight);
+        densityShader.SetFloat ("isoLevel",map.IsoLevel);
+        densityShader.SetFloat ("isoOffset", chunkParams.IsoOffset);
+        densityShader.SetFloat ("isoOffsetByHeight", chunkParams.IsoOffsetByHeight);
 
         densityShader.SetVector ("params", shaderParams);
 
-        return base.Generate (pointsBuffer, numPointsPerAxis, boundsSize, worldBounds, centre, offset, spacing);
+        return base.Generate (pointsBuffer, numPointsPerAxis, boundsSize, worldBounds, centre, offset, spacing, map, chunk);
     }
 }

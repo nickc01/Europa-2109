@@ -9,7 +9,7 @@ public abstract class MapGenerator : MonoBehaviour {
 
     protected List<ComputeBuffer> buffersToRelease;
 
-    public virtual ComputeBuffer Generate (ComputeBuffer pointsBuffer, int numPointsPerAxis, float boundsSize, Vector3 worldBounds, Vector3 centre, Vector3 offset, float spacing) {
+    public virtual ComputeBuffer Generate (ComputeBuffer pointsBuffer, int numPointsPerAxis, float boundsSize, Vector3 worldBounds, Vector3 centre, Vector3 offset, float spacing, Map map, Chunk chunk) {
         int numPoints = numPointsPerAxis * numPointsPerAxis * numPointsPerAxis;
         int numThreadsPerAxis = Mathf.CeilToInt (numPointsPerAxis / (float) threadGroupSize);
         // Points buffer is populated inside shader with pos (xyz) + density (w).

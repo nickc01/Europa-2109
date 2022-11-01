@@ -23,7 +23,7 @@ public class ColourGenerator : MonoBehaviour {
 
         Map m = FindObjectOfType<Map> ();
 
-        float boundsY = m.boundsSize;
+        float boundsY = m.BoundsSize;
 
         mat.SetFloat ("boundsY", boundsY);
         mat.SetFloat ("normalOffsetWeight", normalOffsetWeight);
