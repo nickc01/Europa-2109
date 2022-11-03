@@ -7,9 +7,14 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using Unity.Mathematics;
+using static Unity.Mathematics.math;
+using System.Collections.Concurrent;
 
 public class Chunk : MonoBehaviour
 {
+    public static ConcurrentDictionary<FileStream,bool> openStreams = new ConcurrentDictionary<FileStream,bool>();
+
     public enum LoadingState
     {
         Unloaded,
@@ -38,7 +43,8 @@ public class Chunk : MonoBehaviour
 
         float DistanceToViewer(Chunk chunk)
         {
-            return Vector3.Distance(Viewer.position,chunk.Position);
+            //return Vector3.Distance(Viewer.position,chunk.Position);
+            return length((float3)Viewer.position - chunk.Position);
         }
     }
 
@@ -49,7 +55,7 @@ public class Chunk : MonoBehaviour
     /// </summary>
     public bool KeepLoaded { get; set; } = false;
 
-    public Vector3Int Position;
+    public int3 Position;
     public Map SourceMap { get; set; }
 
     public Mesh Mesh { get; private set; }
@@ -213,9 +219,17 @@ public class Chunk : MonoBehaviour
             Directory.CreateDirectory(folder);
         }
         var bytes = MemoryMarshal.AsBytes(Points.AsSpan());
-        using var file = System.IO.File.OpenWrite(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt");
+
+        Debug.Log($"Writing {Position}");
+        //using var file = System.IO.File.OpenWrite(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt");
+        using var file = System.IO.File.Open(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt", FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
+        //openStreams.TryAdd(file, true);
         using var gzipWriter = new System.IO.Compression.GZipStream(file, System.IO.Compression.CompressionMode.Compress);
         gzipWriter.Write(bytes);
+        gzipWriter.Close();
+        file.Close();
+        //openStreams.TryRemove(file,out _);
+        Debug.Log($"Writing {Position} DONE");
     }
 
     void ReadPointData(string folder)
@@ -239,17 +253,23 @@ public class Chunk : MonoBehaviour
             return;
         }
 
-        using var file = System.IO.File.OpenRead(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt");
+        Debug.Log($"READING {Position}");
+        //using var file = System.IO.File.OpenRead(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt");
+        using var file = System.IO.File.Open(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt",FileMode.OpenOrCreate,FileAccess.Read,FileShare.ReadWrite);
+        //openStreams.TryAdd(file, true);
         using var gzipReader = new System.IO.Compression.GZipStream(file, System.IO.Compression.CompressionMode.Decompress);
         gzipReader.Read(bytes);
+        gzipReader.Close();
+        file.Close();
+        //openStreams.TryRemove(file, out _);
 
         PointsLoaded = true;
+        Debug.Log($"READING {Position} DONE");
     }
 
-    public void SaveSynchronously()
+    public void SaveSynchronously(string folder)
     {
-        var folder = Application.persistentDataPath + $"/{SourceMap.WorldName}";
-        WritePointData(folder);
+        WritePointData(folder + $"/{SourceMap.WorldName}");
     }
 
 

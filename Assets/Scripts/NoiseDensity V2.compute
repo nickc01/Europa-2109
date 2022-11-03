@@ -65,6 +65,6 @@ void Density(int3 id : SV_DispatchThreadID)
     }*/
 
     int index = indexFromCoord(id.x, id.y, id.z);
-    points[index] = finalVal;
+    points[index] = clamp(finalVal,isoLevel - 2, isoLevel + 2);
 
 }

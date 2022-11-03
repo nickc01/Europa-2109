@@ -876,8 +876,8 @@ MonoBehaviour:
   <NumPointsPerAxis>k__BackingField: 30
   showBoundsGizmo: 1
   boundsGizmoCol: {r: 1, g: 1, b: 1, a: 1}
-  <SphereBrushSpeed>k__BackingField: 0.01
-  sphereBrushSize: 2
+  <SphereBrushSpeed>k__BackingField: 1
+  sphereBrushSize: 3
   sphereBrushShader: {fileID: 7200000, guid: ab648f693fc5c5a4e8804334a56d4a57, type: 3}
   <CubeBrushSize>k__BackingField: {x: 3, y: 3, z: 3}
   <CubeBrushSpeed>k__BackingField: 1

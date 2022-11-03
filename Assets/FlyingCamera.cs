@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Burst.CompilerServices;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -23,6 +24,9 @@ public class FlyingCamera : MonoBehaviour
     bool enableBrush;
 
     [SerializeField]
+    float brushSpeed = 5f;
+
+    [SerializeField]
     Map map;
 
     Quaternion targetRotation;
@@ -40,7 +44,14 @@ public class FlyingCamera : MonoBehaviour
         oldMousePosition = Input.mousePosition;
         Cursor.lockState = CursorLockMode.Locked;
         targetRotation = transform.rotation;
+        //StartCoroutine(TestDraw());
     }
+
+    /*IEnumerator TestDraw()
+    {
+        yield return new WaitForSeconds(2f);
+        map.UseSphereBrush(transform.position, true, 1000f);
+    }*/
 
     bool inFocus = false;
 
@@ -123,7 +134,7 @@ public class FlyingCamera : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (inFocus)
+        if (inFocus && enableBrush)
         {
             if (Input.GetKey(KeyCode.Mouse0))
             {
@@ -151,9 +162,10 @@ public class FlyingCamera : MonoBehaviour
             if (map.FireRayParallel(ray,out var hit,10f,map.BoundsSize / map.NumPointsPerAxis))
             {
                 var distance = Vector3.Distance(transform.position, hit);
-                if (distance >= map.SphereBrushSize / 2f && distance <= 10f)
+                if (distance >= 1f && distance <= 10f)
                 {
-                    map.UseSphereBrush(hit, eraseMode, Time.fixedDeltaTime);
+                    map.UseSphereBrush(hit, eraseMode, Time.fixedDeltaTime * (brushSpeed / 10f), new int3(1.5));
+                    //map.UseCubeBrush(hit,eraseMode,10f,new int3(5,6,7));
                 }
             }
         }
