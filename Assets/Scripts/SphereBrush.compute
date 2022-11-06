@@ -65,10 +65,10 @@ void SphereBrush(int3 id : SV_DispatchThreadID)
     // * (boundsSize / (numPointsPerAxis - 1))
 
     //float brushSample = GetSphereBrushValueAtPoint(relativePoint.x - id.x, relativePoint.x - id.y, relativePoint.x - id.z);
-    float brushSample = GetSphereBrushValueAtPoint(id - relativePoint.x);
+    //float brushSample = GetSphereBrushValueAtPoint(id - relativePoint.x);
     
 
-    points[indexFromCoord(id.x, id.y, id.z)] = (brushSample * brushSample * brushValue);
+    //points[indexFromCoord(id.x, id.y, id.z)] = (brushSample * brushSample * brushValue);
     //points[indexFromCoord(id.x, id.y, id.z)] += 0.1f;
 
     //var samplePoint = brushPosition + (new Vector3(x - sphereBrushPointSize, y - sphereBrushPointSize, z - sphereBrushPointSize) / boundsSize);

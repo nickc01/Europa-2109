@@ -61,7 +61,7 @@ public class FlyingCamera : MonoBehaviour
         if (inFocus)
         {
             var mousePos = Input.mousePosition;
-            var mouseDT = mousePos - oldMousePosition;
+            //var mouseDT = mousePos - oldMousePosition;
             oldMousePosition = mousePos;
 
             //Debug.Log("MousePos = " + new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")));
@@ -77,6 +77,7 @@ public class FlyingCamera : MonoBehaviour
             //targetRotation = Quaternion.Euler(Mathf.Clamp(targetRotation.eulerAngles.x + (-Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime),-89f,89f), targetRotation.eulerAngles.y + (Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime), 0f);
 
             var xRotation = targetRotation.eulerAngles.x + (-Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime);
+            var yRotation = targetRotation.eulerAngles.y + (Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime);
 
             /*if (xRotation > 180f)
             {
@@ -99,8 +100,9 @@ public class FlyingCamera : MonoBehaviour
                 Debug.Log("Greater Than");
             }*/
 
-            targetRotation = Quaternion.Euler(xRotation, targetRotation.eulerAngles.y + (Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime), 0f);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationInterpolationSpeed * Time.deltaTime);
+            targetRotation = Quaternion.Euler(xRotation, yRotation, 0f);
+            transform.rotation = targetRotation;
+            //transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationInterpolationSpeed * Time.deltaTime);
 
             rb.velocity += transform.TransformVector(Vector3.forward * acceleration * Input.GetAxis("Vertical") * Time.deltaTime);
             rb.velocity += transform.TransformVector(Vector3.right * acceleration * Input.GetAxis("Horizontal") * Time.deltaTime);
@@ -124,7 +126,7 @@ public class FlyingCamera : MonoBehaviour
         if (!Input.GetKey(KeyCode.LeftShift))
         {
             rb.velocity += transform.TransformVector(Vector3.forward * acceleration * Input.GetAxis("Vertical") * Time.fixedDeltaTime);
-
+ 
             if (rb.velocity.magnitude >= velocityLimit)
             {
                 rb.velocity = rb.velocity.normalized * velocityLimit;

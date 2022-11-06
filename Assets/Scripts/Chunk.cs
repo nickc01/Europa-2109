@@ -13,6 +13,8 @@ using System.Collections.Concurrent;
 
 public class Chunk : MonoBehaviour
 {
+    static string PersistentDataPath = null;
+
     public static ConcurrentDictionary<FileStream,bool> openStreams = new ConcurrentDictionary<FileStream,bool>();
 
     public enum LoadingState
@@ -31,24 +33,71 @@ public class Chunk : MonoBehaviour
     {
         Comparer<float> floatComparer;
 
-        public Transform Viewer;
+        //public Transform Viewer;
+        public int3 viewerChunkPos;
         public int Compare(Chunk x, Chunk y)
         {
             if (floatComparer == null)
             {
                 floatComparer = Comparer<float>.Default;
             }
-            return floatComparer.Compare(DistanceToViewer(x),DistanceToViewer(y));
+
+            if (x == null)
+            {
+                return 1;
+            }
+            else if (y == null)
+            {
+                return -1;
+            }
+            else if (x == null && y == null)
+            {
+                return 0;
+            }
+            return floatComparer.Compare(DistanceToViewer(y),DistanceToViewer(x));
         }
 
         float DistanceToViewer(Chunk chunk)
         {
             //return Vector3.Distance(Viewer.position,chunk.Position);
-            return length((float3)Viewer.position - chunk.Position);
+            return length(viewerChunkPos - chunk.Position);
         }
     }
 
-    public LoadingState State { get; private set; } = LoadingState.Unloaded;
+    public class DistanceSorterInt3 : IComparer<int3>
+    {
+        Comparer<float> floatComparer;
+
+        public int3 viewerChunkPos;
+        public int Compare(int3 x, int3 y)
+        {
+            if (floatComparer == null)
+            {
+                floatComparer = Comparer<float>.Default;
+            }
+            if (x.x == int.MaxValue)
+            {
+                return 1;
+            }
+            else if (y.y == int.MaxValue)
+            {
+                return -1;
+            }
+            else if (x.x == int.MaxValue && y.y == int.MaxValue)
+            {
+                return 0;
+            }
+            return floatComparer.Compare(DistanceToViewer(y), DistanceToViewer(x));
+        }
+
+        float DistanceToViewer(int3 chunk)
+        {
+            //return Vector3.Distance(Viewer.position,chunk.Position);
+            return length(viewerChunkPos - chunk);
+        }
+    }
+
+    //public LoadingState State { get; private set; } = LoadingState.Unloaded;
 
     /// <summary>
     /// Keeps this chunk loaded at all times.
@@ -65,14 +114,24 @@ public class Chunk : MonoBehaviour
 
     public float[] Points { get; set; }
 
-    private bool generateCollider;
+    //private bool generateCollider;
 
     public bool PointsLoaded = false;
+    public bool NewlyGenerated = true;
 
-    object loadLock = new object();
+    public float3 GetCentre(Map map)
+    {
+        return new float3(Position) * map.BoundsSize;
+    }
+
+    //object loadLock = new object();
 
     private void Awake()
     {
+        if (PersistentDataPath == null)
+        {
+            PersistentDataPath = Application.persistentDataPath;
+        }
         MainFilter = GetComponent<MeshFilter>();
         MainRenderer = GetComponent<MeshRenderer>();
 
@@ -97,6 +156,11 @@ public class Chunk : MonoBehaviour
         }
 
         MainCollider = GetComponent<MeshCollider>();
+
+        if (MainCollider == null)
+        {
+            MainCollider = gameObject.AddComponent<MeshCollider>();
+        }
     }
 
     public Map.ChunkGenerationParameters ChunkGenerationParameters()
@@ -112,7 +176,7 @@ public class Chunk : MonoBehaviour
     //public async Task Init(Material mat, bool generateCollider, bool cached)
     public async Task<bool> Init(Map map, bool cached)
     {
-        gameObject.SetActive(true);
+        /*gameObject.SetActive(true);
         generateCollider = map.generateColliders;
 
 
@@ -123,26 +187,24 @@ public class Chunk : MonoBehaviour
         if (MainCollider != null && !generateCollider)
         {
             DestroyImmediate(MainCollider);
-        }
+        }*/
 
-        MainRenderer.enabled = true;
+        /*MainRenderer.enabled = true;
 
-        if (generateCollider && MainCollider.sharedMesh == null)
+        if (map.generateColliders && MainCollider.sharedMesh == null)
         {
             MainCollider.sharedMesh = Mesh;
         }
 
-        MainRenderer.material = map.ChunkMaterial;
+        MainRenderer.sharedMaterial = map.ChunkMaterial;*/
 
         return await ChunkStart(cached);
     }
 
     public async Task Uninit()
     {
-        MainRenderer.enabled = false;
+        NewlyGenerated = true;
         await ChunkEnd();
-        Mesh.Clear();
-        gameObject.SetActive(false);
         PointsLoaded = false;
     }
 
@@ -158,22 +220,22 @@ public class Chunk : MonoBehaviour
         }*/
 
 
-        try
-        {
-            Monitor.Enter(loadLock);
-            if (!(State == LoadingState.Unloaded || State == LoadingState.UnloadedCached))
+        //try
+        //{
+            //Monitor.Enter(loadLock);
+            /*if (!(State == LoadingState.Unloaded || State == LoadingState.UnloadedCached))
             {
                 return false;
-            }
-            State = LoadingState.Loading;
-            var folder = Application.persistentDataPath + $"/{SourceMap.WorldName}";
+            }*/
+            //State = LoadingState.Loading;
+            var folder = PersistentDataPath + $"/{SourceMap.WorldName}";
             await Task.Run(() => ReadPointData(folder));
-            State = LoadingState.Loaded;
-        }
-        finally
-        {
-            Monitor.Exit(loadLock);
-        }
+            //State = LoadingState.Loaded;
+        //}
+        //finally
+        //{
+            //Monitor.Exit(loadLock);
+        //}
 
         return true;
 
@@ -190,23 +252,23 @@ public class Chunk : MonoBehaviour
             }
             State = LoadingState.Unloading;
         }*/
-        try
+        /*try
         {
             Monitor.Enter(loadLock);
             if (State != LoadingState.Loaded)
             {
                 return false;
             }
-            State = LoadingState.Unloading;
-            var folder = Application.persistentDataPath + $"/{SourceMap.WorldName}";
+            State = LoadingState.Unloading;*/
+            var folder = PersistentDataPath + $"/{SourceMap.WorldName}";
             await Task.Run(() => WritePointData(folder));
-
+/*
             State = LoadingState.UnloadedCached;
         }
         finally
         {
             Monitor.Exit(loadLock);
-        }
+        }*/
 
         return true;
         //TODO - Delete Other Objects
@@ -220,16 +282,16 @@ public class Chunk : MonoBehaviour
         }
         var bytes = MemoryMarshal.AsBytes(Points.AsSpan());
 
-        Debug.Log($"Writing {Position}");
-        //using var file = System.IO.File.OpenWrite(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt");
-        using var file = System.IO.File.Open(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt", FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
+        //Debug.Log($"Writing {Position}");
+        using var file = System.IO.File.OpenWrite(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt");
+        //using var file = System.IO.File.Open(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt", FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
         //openStreams.TryAdd(file, true);
         using var gzipWriter = new System.IO.Compression.GZipStream(file, System.IO.Compression.CompressionMode.Compress);
         gzipWriter.Write(bytes);
         gzipWriter.Close();
         file.Close();
         //openStreams.TryRemove(file,out _);
-        Debug.Log($"Writing {Position} DONE");
+        //Debug.Log($"Writing {Position} DONE");
     }
 
     void ReadPointData(string folder)
@@ -253,9 +315,9 @@ public class Chunk : MonoBehaviour
             return;
         }
 
-        Debug.Log($"READING {Position}");
-        //using var file = System.IO.File.OpenRead(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt");
-        using var file = System.IO.File.Open(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt",FileMode.OpenOrCreate,FileAccess.Read,FileShare.ReadWrite);
+        //Debug.Log($"READING {Position}");
+        using var file = System.IO.File.OpenRead(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt");
+        //using var file = System.IO.File.Open(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt",FileMode.OpenOrCreate,FileAccess.Read,FileShare.ReadWrite);
         //openStreams.TryAdd(file, true);
         using var gzipReader = new System.IO.Compression.GZipStream(file, System.IO.Compression.CompressionMode.Decompress);
         gzipReader.Read(bytes);
@@ -264,7 +326,8 @@ public class Chunk : MonoBehaviour
         //openStreams.TryRemove(file, out _);
 
         PointsLoaded = true;
-        Debug.Log($"READING {Position} DONE");
+        NewlyGenerated = false;
+        //Debug.Log($"READING {Position} DONE");
     }
 
     public void SaveSynchronously(string folder)

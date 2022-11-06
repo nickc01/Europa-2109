@@ -5,7 +5,6 @@ using UnityEngine;
 public class NoiseDensity : MapGenerator {
 
     [Header ("Noise")]
-    public int seed;
     public int numOctaves = 4;
     public float lacunarity = 2;
     public float persistence = .5f;
@@ -24,7 +23,7 @@ public class NoiseDensity : MapGenerator {
         buffersToRelease = new List<ComputeBuffer> ();
 
         // Noise parameters
-        var prng = new System.Random (seed);
+        var prng = new System.Random (map.WorldSeed);
         var offsets = new Vector3[numOctaves];
         float offsetRange = 1000;
         for (int i = 0; i < numOctaves; i++) {

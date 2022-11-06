@@ -6,7 +6,10 @@
 // Based on the original implementation by Ken Perlin
 // http://mrl.nyu.edu/~perlin/noise/
 //
+using Unity.Mathematics;
 using UnityEngine;
+
+using static Unity.Mathematics.math;
 
 public static class Perlin
 {
@@ -14,10 +17,10 @@ public static class Perlin
 
     public static float Noise(float x)
     {
-        var X = Mathf.FloorToInt(x) & 0xff;
-        x -= Mathf.Floor(x);
+        var X = (int)floor(x) & 0xff;
+        x -= (int)floor(x);
         var u = Fade(x);
-        return Lerp(u, Grad(perm[X], x), Grad(perm[X + 1], x - 1)) * 2;
+        return lerp(u, Grad(perm[X], x), Grad(perm[X + 1], x - 1)) * 2;
     }
 
     public static float Noise(float x, float y)
@@ -39,14 +42,19 @@ public static class Perlin
         return Noise(coord.x, coord.y);
     }
 
+    /*public static float Noise(float3 pos)
+    {
+        return Noise(pos.x, pos.y, pos.z);
+    }*/
+
     public static float Noise(float x, float y, float z)
     {
-        var X = Mathf.FloorToInt(x) & 0xff;
-        var Y = Mathf.FloorToInt(y) & 0xff;
-        var Z = Mathf.FloorToInt(z) & 0xff;
-        x -= Mathf.Floor(x);
-        y -= Mathf.Floor(y);
-        z -= Mathf.Floor(z);
+        var X = (int)floor(x) & 0xff;
+        var Y = (int)floor(y) & 0xff;
+        var Z = (int)floor(z) & 0xff;
+        x -= floor(x);
+        y -= floor(y);
+        z -= floor(z);
         var u = Fade(x);
         var v = Fade(y);
         var w = Fade(z);
@@ -56,13 +64,13 @@ public static class Perlin
         var BA = (perm[B] + Z) & 0xff;
         var AB = (perm[A + 1] + Z) & 0xff;
         var BB = (perm[B + 1] + Z) & 0xff;
-        return Lerp(w, Lerp(v, Lerp(u, Grad(perm[AA], x, y, z), Grad(perm[BA], x - 1, y, z)),
-                               Lerp(u, Grad(perm[AB], x, y - 1, z), Grad(perm[BB], x - 1, y - 1, z))),
-                       Lerp(v, Lerp(u, Grad(perm[AA + 1], x, y, z - 1), Grad(perm[BA + 1], x - 1, y, z - 1)),
-                               Lerp(u, Grad(perm[AB + 1], x, y - 1, z - 1), Grad(perm[BB + 1], x - 1, y - 1, z - 1))));
+        return lerp(w, lerp(v, lerp(u, Grad(perm[AA], x, y, z), Grad(perm[BA], x - 1, y, z)),
+                               lerp(u, Grad(perm[AB], x, y - 1, z), Grad(perm[BB], x - 1, y - 1, z))),
+                       lerp(v, lerp(u, Grad(perm[AA + 1], x, y, z - 1), Grad(perm[BA + 1], x - 1, y, z - 1)),
+                               lerp(u, Grad(perm[AB + 1], x, y - 1, z - 1), Grad(perm[BB + 1], x - 1, y - 1, z - 1))));
     }
 
-    public static float Noise(Vector3 coord)
+    public static float Noise(float3 coord)
     {
         return Noise(coord.x, coord.y, coord.z);
     }
@@ -108,7 +116,7 @@ public static class Perlin
         var w = 0.5f;
         for (var i = 0; i < octave; i++)
         {
-            f += w * Noise(coord);
+            f += w * Noise((Vector2)coord);
             coord *= 2.0f;
             w *= 0.5f;
         }
