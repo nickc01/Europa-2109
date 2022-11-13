@@ -10,7 +10,7 @@ public class ResultsScreen : MonoBehaviour
 
     public void OnWin()
     {
-        resultsText.text = "You Win!";
+        resultsText.text = "Mission Accomplished";
         gameObject.SetActive(true);
         Cursor.lockState = CursorLockMode.None;
     }

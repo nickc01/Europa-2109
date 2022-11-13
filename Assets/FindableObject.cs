@@ -29,18 +29,10 @@ public class FindableObject : MonoBehaviour
         if (lengthsq(Submarine.Instance.transform.position - transform.position) <= (minimumFindDistance * minimumFindDistance))
         {
             NearbyObjects.Add(this);
-            /*if (!NearbyObjects.Contains(this))
-            {
-                NearbyObjects.Add(this);
-            }*/
         }
         else
         {
             NearbyObjects.Remove(this);
-            /*if (NearbyObjects.Contains(this))
-            {
-                NearbyObjects.Remove(this);
-            }*/
         }
     }
 
@@ -49,7 +41,6 @@ public class FindableObject : MonoBehaviour
         if (Map.Instance.SamplePoint(transform.TransformPoint(anchorPoint)) < Map.Instance.IsoLevel)
         {
             MainPool.Return(gameObject);
-            //Destroy(gameObject);
         }
     }
 

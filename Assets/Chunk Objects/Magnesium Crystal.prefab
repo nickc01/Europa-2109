@@ -128,7 +128,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8fdc4bace6e6ed746a05d1ec55e3a4fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minimumFindDistance: 3
+  minimumFindDistance: 9
   <TargetOffset>k__BackingField: {x: 0, y: 0, z: 0.35}
   <TargetSize>k__BackingField: {x: 10, y: 10, z: 10}
   anchorPoint: {x: 0, y: 0, z: 0}

@@ -49,8 +49,6 @@ public class ChunkObjectsDictionary : ScriptableObject
         int alreadyFoundObjects = Submarine.Instance.ObjectsFound;
         float height = Submarine.Instance.SubHeight;
         float total = ChunkObjects.Where(e => e.HeightLimit < height && e.FoundObjectMinimum <= alreadyFoundObjects).Sum(e => e.Rarity);
-        //var number = UnityEngine.Random.Range(0f, total);
-
         Unity.Mathematics.Random randomizer = new Unity.Mathematics.Random((uint)abs(chunkPosition.GetHashCode()));
         float number = randomizer.NextFloat(0f, total);
 

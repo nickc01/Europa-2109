@@ -20,8 +20,6 @@ public class IntroPanel : MonoBehaviour
     [SerializeField]
     private Button continueButton;
 
-    //TODO TODO TODO
-
     private bool onInstructions = false;
 
 

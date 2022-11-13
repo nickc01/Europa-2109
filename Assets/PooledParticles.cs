@@ -35,7 +35,6 @@ public class PooledParticles : MonoBehaviour
             {
                 continue;
             }
-            //var instance = particleSystem;
             particleSystem.gameObject.SetActive(true);
             particleSystem.transform.SetPositionAndRotation(position, rotation);
             particleSystem.sourcePool = this;
@@ -51,10 +50,6 @@ public class PooledParticles : MonoBehaviour
     private void OnParticleSystemStopped()
     {
         gameObject.SetActive(false);
-        /*if (pool == null)
-        {
-            pool = new Queue<PooledParticles>();
-        }*/
         sourcePool.pool.Enqueue(this);
     }
 }

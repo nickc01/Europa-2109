@@ -13,8 +13,8 @@ public class LaserAnimator : MonoBehaviour
 
     private void Start()
     {
-        StartCoroutine(AnimatorRoutine());
         sRenderer = GetComponent<SpriteRenderer>();
+        StartCoroutine(AnimatorRoutine());
     }
 
     private IEnumerator AnimatorRoutine()

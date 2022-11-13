@@ -41,8 +41,8 @@ public class CircleTarget : MonoBehaviour
         transform.SetAsFirstSibling();
         graphic = GetComponent<Graphic>();
         Alpha = 0;
-        //graphic.CrossFadeAlpha(1f, alphaChangeTime, false);
         StartCoroutine(InterpolateAlphaTo(1f, alphaChangeTime));
+        //Debug.Log("SPAWNING CRICLE");
     }
 
     public void DestroyTarget()
@@ -60,7 +60,6 @@ public class CircleTarget : MonoBehaviour
         Destroy(gameObject, alphaChangeTime);
         StopAllCoroutines();
         StartCoroutine(InterpolateAlphaTo(0f, alphaChangeTime));
-        //graphic.CrossFadeAlpha(0f, alphaChangeTime, false);
     }
 
     private IEnumerator InterpolateAlphaTo(float alpha, float time)
@@ -74,14 +73,35 @@ public class CircleTarget : MonoBehaviour
         Alpha = alpha;
     }
 
+    private bool visibleToSub = true;
+
     private void Update()
     {
         if (TargetObject != null)
         {
-            targetPosition = TargetObject.transform.TransformPoint(TargetObject.TargetOffset);//TargetObject.transform.position + TargetObject.TargetOffset;
+            targetPosition = TargetObject.transform.TransformPoint(TargetObject.TargetOffset);
             targetSize = (Vector2)TargetObject.TargetSize * TargetObject.transform.localScale;
 
-            InstructionalText.DisplayText("Hold C to Collect", 1f / 59f);
+            bool hitSomething = Map.Instance.FireRayParallel(new Ray(Submarine.Instance.transform.position, normalize(targetPosition - Submarine.Instance.transform.position)), out Unity.Mathematics.float3 hit, length(targetPosition - Submarine.Instance.transform.position));
+
+            if ((hitSomething && Vector3.Distance(targetPosition, hit) < 0.2f) || !hitSomething)
+            {
+                visibleToSub = true;
+            }
+            else
+            {
+                visibleToSub = false;
+            }
+
+            if (Vector3.Distance(Submarine.Instance.transform.position, targetPosition) <= 3 && visibleToSub)
+            {
+                InstructionalText.DisplayText("Hold C to Collect", 1f / 59f);
+                graphic.color = new Color(1f, 1f, 1f, graphic.color.a);
+            }
+            else
+            {
+                graphic.color = new Color(1f, 0f, 0f, graphic.color.a);
+            }
         }
         if (TargetCanvas != null)
         {
@@ -94,13 +114,20 @@ public class CircleTarget : MonoBehaviour
             rt.sizeDelta = new Vector2(150f, 150f) * (1f / length(targetPosition - Submarine.Instance.transform.position)) * targetSize;
         }
 
-        if (!Submarine.GameOver && Selected && TargetObject != null && Input.GetKey(KeyCode.C))
+        if (!Submarine.GameOver && !Submarine.GameWin && Selected && TargetObject != null && Input.GetKey(KeyCode.C))
         {
-            InstructionalProgressBar.ObjectLock = gameObject;
-            InstructionalProgressBar.Progress += (1f / collectionTime) * Time.deltaTime;
-            if (InstructionalProgressBar.Progress >= 1f)
+            if (Vector3.Distance(Submarine.Instance.transform.position, targetPosition) <= 3 && visibleToSub)
             {
-                Submarine.Instance.FoundAnObject(TargetObject);
+                InstructionalProgressBar.ObjectLock = gameObject;
+                InstructionalProgressBar.Progress += (1f / collectionTime) * Time.deltaTime;
+                if (InstructionalProgressBar.Progress >= 1f)
+                {
+                    Submarine.Instance.FoundAnObject(TargetObject);
+                    InstructionalProgressBar.Progress = 0f;
+                }
+            }
+            else if (InstructionalProgressBar.ObjectLock == gameObject)
+            {
                 InstructionalProgressBar.Progress = 0f;
             }
         }

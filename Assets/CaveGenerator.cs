@@ -112,7 +112,6 @@ public class CaveGenerator : MonoBehaviour
         }
 
 
-        //RegionChecks.Add()
     }
 
     private void CheckRegionAddition(Chunk newChunk)
@@ -164,7 +163,6 @@ public class CaveGenerator : MonoBehaviour
         loadedChunks.TryRemove(newChunk, out _);
         try
         {
-            //List<RegionCheck> regionsToAdd = new List<RegionCheck>();
             regionLock.EnterReadLock();
             for (int i = RegionChecks.Count - 1; i >= 0; i--)
             {
@@ -173,11 +171,6 @@ public class CaveGenerator : MonoBehaviour
                 if (region.chunksLoaded.Contains(newChunk))
                 {
                     region.chunksLoaded.Remove(newChunk);
-                    /*if (region.chunksRequired.Count == region.chunksLoaded.Count)
-                    {
-                        regionsToRemove.Add(region);
-                        region.callback(region.chunksLoaded);
-                    }*/
                 }
             }
         }
@@ -193,18 +186,13 @@ public class CaveGenerator : MonoBehaviour
         map.OnChunkLoad += Map_OnChunkLoad;
         map.OnChunkLoad += CheckRegionAddition;
         map.OnChunkUnload += CheckRegionRemove;
-        //Task.Run(Generator);
     }
 
     private void Map_OnChunkLoad(Chunk obj)
     {
-        //Debug.Log("Chunk Loaded = " + obj.Position);
         if (obj.NewlyGenerated)
         {
-            //var perlinValue = Perlin.Noise((float3)obj.Position / perlinSize);
-            //var perlinValue = RandomFloatGenerator(obj.Position,map.WorldSeed);
             float perlinValue = CaveGenerationFunction(obj.Position);
-            //Debug.Log($"Perlin Value {obj.Position} = " + perlinValue);
             if (perlinValue >= perlinThreshold)
             {
                 obj.KeepLoaded = true;
@@ -212,20 +200,23 @@ public class CaveGenerator : MonoBehaviour
             }
             else
             {
-                Task.Run(obj.GenerateChunkObjects);
+                //Task.Run(obj.GenerateChunkObjects);
             }
         }
     }
 
     private async Task GenerateRoom(Chunk chunk, float perlinValue)
     {
-        //List<Chunk> loadedChunks = new List<Chunk>();
-        //await map.LoadChunksInArea(chunk.GetCentre(map),new Unity.Mathematics.int3(1),keepChunksLoaded: true,out_chunksInArea: loadedChunks);
+        int regionAddition = 0;
 
-        AddRegionCheck(chunk.Position, new int3(2), new int3(1), async chunks =>
+        if (all(chunk.Position == new int3(0, 5, 0)))
         {
-            //Debug.Log($"Region Loaded for {chunk.Position}");
+            regionAddition = 2;
+        }
 
+
+        AddRegionCheck(chunk.Position, new int3(2 + regionAddition), new int3(1 + regionAddition), async chunks =>
+        {
             List<int3> destinations = new List<int3>();
 
 
@@ -240,15 +231,18 @@ public class CaveGenerator : MonoBehaviour
                 }
             }
 
-            //List<Task> tasks = new List<Task>();
-
             int destCount = 0;
+            if (all(chunk.Position == new int3(0, 5, 0)))
+            {
+                destCount = -2;
+            }
+
+            List<Task> tasks = new List<Task>();
 
             while (true)
             {
                 int3 randomDest = destinations[LimitToRange(RandomIntGenerator(chunk.Position, destCount), 0, destinations.Count)];
-                //tasks.AddRange();
-                DrawTunnel(chunk.Position, randomDest, 4 * (int)length(chunk.Position - randomDest));
+                tasks.Add(DrawTunnel(chunk.Position, randomDest, 4 * (int)length(chunk.Position - randomDest)));
                 destCount++;
                 if (destCount >= 2)
                 {
@@ -256,18 +250,8 @@ public class CaveGenerator : MonoBehaviour
                 }
             }
 
-            //Debug.Log("Drawn Tunnels");
-            /*foreach (var destination in destinations)
-            {
-                tasks.AddRange(DrawTunnel(chunk.Position, destination, 10));
-                destCount++;
-                if (destCount >= 2)
-                {
-                    break;
-                }
-            }*/
 
-            //await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks);
 
             for (int i = 0; i < chunks.Count; i++)
             {
@@ -278,70 +262,40 @@ public class CaveGenerator : MonoBehaviour
                 chunk.KeepLoaded = false;
             }
 
-            /*List<Task> tasks = new List<Task>();
-            foreach (var destination in destinations)
-            {
-                tasks.Add(DrawTunnel(chunk.Position,destination,10));
-            }
-            await Task.WhenAll(tasks);*/
         });
 
-        map.UseSphereBrush(chunk.GetCentre(map), true, 1f, GenerateLimitedInt3(chunk.Position, map.WorldSeed));
+        map.UseSphereBrush(chunk.GetCentre(map), true, 1f, LimitToRange(RandomInt3Generator(chunk.Position, map.WorldSeed), roomSizeMax - 1, roomSizeMax));
 
         chunk.KeepLoaded = false;
 
-        //var neighbors = GenerateNeighboringRoomLocations((int3)startingPos);
-
-        //UnloadChunks(loadedChunks);
     }
 
-    private void DrawTunnel(int3 sourceChunk, int3 destinationChunk, int steps)
+    private async Task DrawTunnel(int3 sourceChunk, int3 destinationChunk, int steps)
     {
+
+        List<Task> tasks = new List<Task>();
         float3 source = map.ChunkPosToWorldPos(sourceChunk) + (map.BoundsSize / 2f);
         float3 destination = map.ChunkPosToWorldPos(destinationChunk) + (map.BoundsSize / 2f);
 
         for (float i = 0; i <= steps; i++)
         {
-            //Debug.DrawLine(source, lerp(source, destination, i / steps),Color.blue,10f);
             float3 brushSize = RandomFloat3Generator(sourceChunk + destinationChunk, (int)i);
             brushSize = Float3IntoRange(brushSize, new float3(1), new float3(2));
             map.UseSphereBrush(lerp(source, destination, i / steps), true, 1f, brushSize);
-        }
 
-        //map.UseSphereBrush(lerp(source, destination, i / steps), true, 1f, new float3(2));
+            float3 worldPos = lerp(source, destination, i / steps);
 
-        /*Parallel.For(0,steps,i =>
-        {
-            
-        });*/
-    }
+            int3 chunkPos = map.WorldPosToChunkPos(worldPos);
 
-    /*async Task Generator()
-    {
-        try
-        {
-            generatedRoomPositions.Add((int3)startingPos);
-            Debug.Log("Drawing");
-            await DrawRoom(startingPos, loadedChunks);
-
-            Debug.Log("Drawing Done");
-            var testRooms = GenerateNeighboringRoomLocations((int3)startingPos);
-
-            Debug.Log("TEST ROOMS MADE = " + testRooms.Count);
-            for (int i = 0; i < testRooms.Count; i++)
+            if (map.TryGetChunkAtChunkPos(chunkPos, out Chunk brushChunk))
             {
-                Debug.Log($"Room {i} = {testRooms[i]}");
-                Debug.DrawLine(startingPos, (float3)testRooms[i], Color.red, 10f);
+                tasks.Add(brushChunk.GenerateChunkObjects());
             }
 
         }
-        catch (Exception e)
-        {
-            Debug.LogException(e);
-        }
 
-        //Debug.Log("Random Float = " + RandomFloatGenerator(startingPos,0));
-    }*/
+        await Task.WhenAll(tasks);
+    }
 
     private void UnloadChunks(List<Chunk> chunks)
     {
@@ -376,8 +330,6 @@ public class CaveGenerator : MonoBehaviour
     {
         return new float3(RandomFloatGenerator(position, seedOffset), RandomFloatGenerator(position, seedOffset), RandomFloatGenerator(position, seedOffset));
 
-        /*var randomInt = RandomIntGenerator(position, seedOffset);
-        return ((float)randomInt) / int.MaxValue;*/
     }
 
 
@@ -431,72 +383,4 @@ public class CaveGenerator : MonoBehaviour
         return (value * (max - min)) + min;
     }
 
-    /*
-     * double fRand(double fMin, double fMax)
-        {
-            double f = (double)rand() / RAND_MAX;
-            return fMin + f * (fMax - fMin);
-        }
-     */
-
-    /*public List<int3> GenerateNeighboringRoomLocations(int3 sourcePosition)
-    {
-        var roomCount = LimitToRange(RandomIntGenerator(sourcePosition), neighboringRoomCountRange.x, neighboringRoomCountRange.y);
-
-        Debug.Log("Room Count = " + roomCount);
-
-        List<int3> newRooms = new List<int3>();
-
-        //int seedOffset = 0;
-
-        for (int i = 0; i < roomCount; i++)
-        {
-            //Debug.Log("Generating Room = " + i);
-            for (int seedOffset = 0; seedOffset < 5; seedOffset++)
-            {
-                //Debug.Log("Seed = " + seedOffset);
-                var roomDistance = FloatIntoRange(RandomFloatGenerator(sourcePosition, i * seedOffset), neighboringRoomDistanceRange.x, neighboringRoomDistanceRange.y);
-
-                var direction = normalize(RandomFloat3Generator(sourcePosition, i * seedOffset));
-
-                var newPosition = (int3)(sourcePosition + (direction * roomDistance));
-
-                //Debug.Log("A");
-                Debug.Log($"{i}:{seedOffset} = {newPosition}");
-
-                float nearestDistance;
-                if (newRooms.Count > 0)
-                {
-                    nearestDistance = min(generatedRoomPositions.AsParallel().Min(r => distance(r, newPosition)), newRooms.AsParallel().Min(r => distance(r, newPosition)));
-                }
-                else
-                {
-                    nearestDistance = generatedRoomPositions.AsParallel().Min(r => distance(r, newPosition));
-                }
-                //HPCsharp.ParallelAlgorithm.MinSsePar();
-                //var nearestDistance = generatedRoomPositions.Min(r => distance(r, newPosition));
-                //Debug.Log("B");
-                //Debug.Log("Nearest Distance = " + nearestDistance);
-                if (nearestDistance >= minDistanceBetweenRooms)
-                {
-                    newRooms.Add(newPosition);
-                    break;
-                }
-            }
-            //HPCsharp.Algorithm.MinHpc(generatedRoomPositions,)
-            //HPCsharp.Algorithm.SortRadix(generatedRoomPositions,room => (uint)ceil(distance(room, newPosition)));
-
-            //HPCsharp.Algorithm.SortRadix(new int[4], i => 1);
-
-            //TODO - Create a Random Generator for floats and create a function for generating a random direction vector
-
-            //TODO - Use the random direction vector and the random distance value to get the position of the new room
-
-            //TODO - Check to make sure that the room doesn't collide with any other rooms already generated. If it does, increase the seedoffset and try again. If if fails 5 times, then maybe skip that room.
-
-        }
-
-
-        return newRooms;
-    }*/
 }

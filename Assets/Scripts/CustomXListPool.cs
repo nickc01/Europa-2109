@@ -34,7 +34,6 @@ public static class CustomXListPool
         public void CopyTo(T[] array, int arrayIndex)
         {
             Array.Copy(WrapperArray, 0, array, arrayIndex, Length);
-            //Wrapper.CopyTo(array, arrayIndex,);
         }
 
         public IEnumerator<T> GetEnumerator()
@@ -65,20 +64,6 @@ public static class CustomXListPool
         wrapper.Length = length;
 
         list.AddRange(wrapper);
-
-        //int counter = 0;
-
-
-
-        /*foreach (var item in source)
-        {
-            list.Add(item);
-            counter++;
-            if (counter == length)
-            {
-                break;
-            }
-        }*/
 
         return list;
     }

@@ -12,8 +12,6 @@ public abstract class MapGenerator : MonoBehaviour
     {
         int numPoints = numPointsPerAxis * numPointsPerAxis * numPointsPerAxis;
         int numThreadsPerAxis = Mathf.CeilToInt(numPointsPerAxis / (float)threadGroupSize);
-        // Points buffer is populated inside shader with pos (xyz) + density (w).
-        // Set paramaters
         densityShader.SetBuffer(0, "points", pointsBuffer);
         densityShader.SetInt("numPointsPerAxis", numPointsPerAxis);
         densityShader.SetFloat("boundsSize", boundsSize);
@@ -22,7 +20,6 @@ public abstract class MapGenerator : MonoBehaviour
         densityShader.SetFloat("spacing", spacing);
         densityShader.SetVector("worldSize", worldBounds);
 
-        // Dispatch shader
         densityShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
 
         if (buffersToRelease != null)
@@ -33,7 +30,6 @@ public abstract class MapGenerator : MonoBehaviour
             }
         }
 
-        // Return voxel data buffer so it can be used to generate mesh
         return pointsBuffer;
     }
 }

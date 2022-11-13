@@ -98,29 +98,5 @@ public class InstructionalText : MonoBehaviour
         Alpha = newA;
     }
 
-    /*IEnumerator MakeVisibleRoutine()
-    {
-        var oldA = Alpha;
-        var newA = 1f;
-
-        for (float t = 0; t < interpolationTime; t++)
-        {
-            Alpha = lerp(oldA,newA,t / interpolationTime);
-            yield return null;
-        }
-    }
-
-    IEnumerator MakeInvisibleRoutine()
-    {
-        var oldA = Alpha;
-        var newA = 0f;
-
-        for (float t = 0; t < interpolationTime; t++)
-        {
-            Alpha = lerp(oldA, newA, t / interpolationTime);
-            yield return null;
-        }
-    }*/
-
 
 }

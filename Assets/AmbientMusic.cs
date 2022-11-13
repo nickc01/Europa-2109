@@ -7,7 +7,6 @@ public class AmbientMusic : MonoBehaviour
     [SerializeField]
     private float fadeInTime = 10f;
 
-    // Start is called before the first frame update
     private void Start()
     {
         AudioSource source = GetComponent<AudioSource>();

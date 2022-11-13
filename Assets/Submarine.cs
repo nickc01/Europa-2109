@@ -207,7 +207,6 @@ public class Submarine : MonoBehaviour
     private IEnumerator Test()
     {
         yield return new WaitForSeconds(5f);
-        //Application.LoadLevel(Application.loadedLevel);
         OnGameReload?.Invoke();
         SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().name, LoadSceneMode.Single);
     }
@@ -264,7 +263,6 @@ public class Submarine : MonoBehaviour
         audioFadeInTimer = 0;
     }
 
-    // Start is called before the first frame update
     private void Start()
     {
         EnergyUsage += ambientEnergyUsage;
@@ -278,38 +276,21 @@ public class Submarine : MonoBehaviour
 
         rb = GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
-        //targetRotation = transform.rotation;
-        //oldMousePosition = Input.mousePosition;
-        //targetRotation = transform.rotation;
-        //StartCoroutine(TestDraw());
         destinationRotation = transform.eulerAngles;
 
         UpdateAudioEffects();
 
-        //camera.aspect = 16f / 9f;
     }
 
     private float InputAdjustmentMultiplier(float frameRate)
     {
         return 1f;
-        //return sqrt(1f / GetDegreesPerHZ(frameRate));
-        //return 1f / ();
-
     }
 
     private float GetDegreesPerHZ(float hz)
     {
-        //return -0.01736287f * hz + 3.320607f;
-        return 32504.92f * pow(hz, -2.148081f); //* x ^{ -2.148081}
+        return 32504.92f * pow(hz, -2.148081f);    
     }
-
-    /*IEnumerator TestDraw()
-    {
-        yield return new WaitForSeconds(2f);
-        map.UseSphereBrush(transform.position, true, 1000f);
-    }*/
-
-    //bool inFocus = false;
 
     public bool UsingBrush { get; private set; } = false;
 
@@ -323,9 +304,13 @@ public class Submarine : MonoBehaviour
         audioFadeInTimer = 0f;
     }
 
-    // Update is called once per frame
     private void Update()
     {
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Quit();
+        }
         if (StartSubSounds && audioFadeInTimer < audioFadeInTime)
         {
             audioFadeInTimer += Time.deltaTime;
@@ -337,21 +322,10 @@ public class Submarine : MonoBehaviour
         SubHeight = transform.position.y;
         if (!GameOver && !GameWin)
         {
-            //if (inFocus)
-            //{
-            //previousRotation = destinationRotation;
             destinationRotation += new Vector3(-Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime * pow(rsqrt(Time.deltaTime), 2), Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime * pow(rsqrt(Time.deltaTime), 2));
-            //rb.angularVelocity += new Vector3(-Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime * pow(rsqrt(Time.deltaTime),2), Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime * pow(rsqrt(Time.deltaTime), 2));
 
 
 
-            //rb.angularVelocity += (Quaternion.AngleAxis(-Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime * pow(rsqrt(Time.deltaTime), 2), transform.rotation * Vector3.forward) * Quaternion.AngleAxis(Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime * pow(rsqrt(Time.deltaTime), 2), transform.rotation * Vector3.right)).eulerAngles;
-            //currentRotation = transform.rotation;
-
-
-            //var rotation = transform.eulerAngles;
-
-            //transform.rotation = Quaternion.Slerp(transform.rotation,Quaternion.Euler(rotation.x, rotation.y,0f),rotationInterpolationSpeed * Time.deltaTime);
             if (destinationRotation.x > 89f)
             {
                 destinationRotation.x = 89f;
@@ -361,36 +335,10 @@ public class Submarine : MonoBehaviour
                 destinationRotation.x = -89f;
             }
 
-            //currentRotation = Quaternion.Euler(destinationRotation);
             currentRotation = Quaternion.Slerp(currentRotation, Quaternion.Euler(destinationRotation), rotationInterpolationSpeed * Time.deltaTime);
 
-            //currentRotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(destinationRotation), rotationInterpolationSpeed * Time.deltaTime);
-
-            //transform.eulerAngles = destinationRotation;
             transform.rotation = currentRotation;
 
-            //transform.rotation = Quaternion.AngleAxis(-Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime, transform.right) * Quaternion.AngleAxis(Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime,transform.up) * transform.rotation;
-
-
-            /*var rotationIntensity = lerp(new float2(0f),new float2(90f),new float2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")));
-
-
-            Debug.Log("INput Adjustment = " + (InputAdjustmentMultiplier(1f / Time.deltaTime)));
-
-            var xRotation = currentRotation.x + (-rotationIntensity.y * rotationSpeed * InputAdjustmentMultiplier(1f / Time.deltaTime) * Time.deltaTime);
-            var yRotation = currentRotation.y + (rotationIntensity.x * rotationSpeed * InputAdjustmentMultiplier(1f / Time.deltaTime) * Time.deltaTime);
-
-            if (xRotation > 89f)
-            {
-                xRotation = 89f;
-            }
-            else if (xRotation < -89f)
-            {
-                xRotation = -89f;
-            }
-            currentRotation = new Vector3(xRotation,yRotation,0f);
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(currentRotation), rotationInterpolationSpeed * Time.deltaTime);
-            */
 
 
             Vector3 velocityChange = transform.TransformVector(Vector3.forward * acceleration * Input.GetAxis("Vertical") * Time.deltaTime);
@@ -402,7 +350,6 @@ public class Submarine : MonoBehaviour
             {
                 rb.velocity = totalVelocity;
             }
-            //}
             UpdateTarget();
         }
 
@@ -422,15 +369,8 @@ public class Submarine : MonoBehaviour
     {
         if (!GameOver && !GameWin && enableBrush)
         {
-            /*if (Input.GetKey(KeyCode.Mouse0))
+            if (Input.GetKey(KeyCode.Mouse0) && UseBrush(new Ray(transform.position, currentRotation * Vector3.forward), true))
             {
-                UseBrush(new Vector2(Screen.width / 2f, Screen.height / 2f), false);
-            }*/
-            if (Input.GetKey(KeyCode.Mouse0))
-            {
-
-                //UseBrush(new Vector2(Screen.width / 2f, Screen.height / 2f), true);
-                UseBrush(new Ray(transform.position, currentRotation * Vector3.forward), true);
                 if (!UsingBrush)
                 {
                     UsingBrush = true;
@@ -454,7 +394,6 @@ public class Submarine : MonoBehaviour
         if (!GameOver && !GameWin)
         {
             Energy -= EnergyUsage / 20f * Time.fixedDeltaTime;
-            //Debug.Log("ENERGY = " + Energy);
             OnEnergyChange.Invoke(Energy);
 
             if (Energy <= 0)
@@ -470,14 +409,11 @@ public class Submarine : MonoBehaviour
         }
     }
 
-    private void UseBrush(Ray ray, bool eraseMode)
+    private bool UseBrush(Ray ray, bool eraseMode)
     {
-        //Debug.DrawLine(transform.position, ray.origin + (ray.direction * 5f), Color.red, 5f);;
         float sample = map.SamplePoint(transform.position);
         if (sample < map.IsoLevel)
         {
-            //Ray ray = map.MainCamera.ScreenPointToRay(screenPosition);
-
             if (map.FireRayParallel(ray, out float3 hit, 10f, map.BoundsSize / map.NumPointsPerAxis))
             {
                 float distance = Vector3.Distance(transform.position, hit);
@@ -485,17 +421,16 @@ public class Submarine : MonoBehaviour
                 {
                     map.UseSphereBrush(hit, eraseMode, Time.fixedDeltaTime * (brushSpeed / 10f), new int3(1.5));
                     DigParticles.Spawn(hit, Quaternion.identity);
-                    //Debug.DrawLine(transform.position, ray.origin + (ray.direction * distance), Color.red,5f);
-                    //Debug.DrawLine(transform.position, hit, Color.green, 5f);
                     if (PlayMiningSound(hit))
                     {
                         UpdateLaser(hit, laser1, laserSprite1);
                         UpdateLaser(hit, laser2, laserSprite2);
                     }
-                    //map.UseCubeBrush(hit,eraseMode,10f,new int3(5,6,7));
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     private void UpdateLaser(Vector3 target, Transform laser, SpriteRenderer sprite)
@@ -520,15 +455,7 @@ public class Submarine : MonoBehaviour
         int numPoints = collision.GetContacts(contacts);
         if (numPoints > 0)
         {
-            //var directionToHit = (contacts[0].point - transform.position).normalized;
-
-            //Debug.Log();
-            //var intensity = dot(directionToHit, collision.impulse);
             float intensity = length(collision.impulse);
-            //Debug.Log("Intensity = " + intensity);
-
-            //Debug.Log("HIT = " + intensity);
-
             if (intensity > hitThreshold)
             {
                 TakeHit(contacts[0].point, intensity * damageMultiplier);
@@ -580,9 +507,7 @@ public class Submarine : MonoBehaviour
         {
             float centeredness = dot(transform.rotation * Vector3.forward, (obj.transform.TransformPoint(obj.TargetOffset) - transform.position).normalized) + 1.01f;
 
-            //Debug.Log("CenteredNess = " + centeredness);
-            //var len = length(obj.transform.position - transform.position) * (1f / centeredness);
-            float len = (1f / centeredness) + (length(obj.transform.TransformPoint(obj.TargetOffset) - transform.position) / 10000f);// + sqrt(length(obj.transform.position - transform.position));
+            float len = (1f / centeredness) + (length(obj.transform.TransformPoint(obj.TargetOffset) - transform.position) / 10000f);    
             if (centeredness >= 1.95f && IsTargetVisible(obj) && len < nearestDistance)
             {
                 nearestDistance = len;
@@ -608,33 +533,8 @@ public class Submarine : MonoBehaviour
         }
 
 
-        /*if (nearestObject == null && circleTargetInstance != null)
-        {
-            //GameObject.Destroy(circleTargetInstance);
-            circleTargetInstance.DestroyTarget();
-            circleTargetInstance = null;
-            targetShown = false;
-        }
-        else if (nearestObject != null && circleTargetInstance == null)
-        {
-            circleTargetInstance = GameObject.Instantiate(circleTargetPrefab,UICanvas.transform);
-            targetShown = true;
-        }*/
-
         previousNearestObject = nearestObject;
 
-        /*if (nearestObject != null)
-        {
-            var canvasSize = UICanvas.GetComponent<RectTransform>().sizeDelta;
-
-            var rt = circleTargetInstance.GetComponent<RectTransform>();
-
-
-            rt.anchoredPosition = mainCamera.WorldToViewportPoint(nearestObject.transform.position + nearestObject.TargetOffset) * canvasSize;
-            rt.sizeDelta = new Vector2(1500f,1500f) * (1f / length(nearestObject.transform.position - transform.position)) * nearestObject.TargetSize * nearestObject.transform.localScale;
-            //circleTargetInstance.transform.localPosition = mainCamera.WorldToScreenPoint(nearestObject.transform.position);
-            //Debug.Log("LOCATION = " + circleTargetInstance.GetComponent<RectTransform>().anchoredPosition);
-        }*/
     }
 
     public void FoundAnObject(FindableObject obj)
@@ -658,7 +558,6 @@ public class Submarine : MonoBehaviour
             MainPool.Return(dObject.gameObject);
         }
 
-        //Destroy(obj.gameObject);
         ObjectsFound++;
 
         if (ObjectsFound >= ObjectsToFind)
@@ -684,16 +583,6 @@ public class Submarine : MonoBehaviour
         onDone?.Invoke();
     }
 
-    /*public void ShowTarget(FindableObject target)
-    {
-
-    }
-
-    public void HideTarget()
-    {
-
-    }*/
-
     private static Plane[] planeCache = new Plane[6];
 
     private static bool IsVisibleFrom(Bounds bounds, Camera camera)
@@ -705,6 +594,7 @@ public class Submarine : MonoBehaviour
     private bool IsTargetVisible(FindableObject target)
     {
         Ray ray = new Ray(transform.position, (target.transform.position - transform.position).normalized);
-        return map.FireRayParallel(ray, out _, length(target.transform.position - transform.position) - 0.5f, map.BoundsSize / map.NumPointsPerAxis) == false && IsVisibleFrom(new Bounds(target.transform.position, target.transform.localScale), mainCamera);
+        //map.FireRayParallel(ray, out _, length(target.transform.position - transform.position) - 0.5f, map.BoundsSize / map.NumPointsPerAxis)
+        return IsVisibleFrom(new Bounds(target.transform.position, target.transform.localScale), mainCamera);
     }
 }

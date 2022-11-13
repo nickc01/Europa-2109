@@ -11,8 +11,6 @@ public class Chunk : MonoBehaviour
 {
     private static string PersistentDataPath = null;
 
-    //public static ConcurrentDictionary<FileStream,bool> openStreams = new ConcurrentDictionary<FileStream,bool>();
-
     public enum LoadingState
     {
         Unloaded,
@@ -26,7 +24,6 @@ public class Chunk : MonoBehaviour
     public struct ChunkObjectInfo
     {
         public float3 worldpos;
-        //public float3 worldRot;
         public float3 lookAtPoint;
         public float3 localScale;
 
@@ -40,14 +37,10 @@ public class Chunk : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// Sorts chunks based on how close they are to the viewer
-    /// </summary>
     public class DistanceSorter : IComparer<Chunk>
     {
         private Comparer<float> floatComparer;
 
-        //public Transform Viewer;
         public int3 viewerChunkPos;
         public int Compare(Chunk x, Chunk y)
         {
@@ -73,7 +66,6 @@ public class Chunk : MonoBehaviour
 
         private float DistanceToViewer(Chunk chunk)
         {
-            //return Vector3.Distance(Viewer.position,chunk.Position);
             return length(viewerChunkPos - chunk.Position);
         }
     }
@@ -106,16 +98,10 @@ public class Chunk : MonoBehaviour
 
         private float DistanceToViewer(int3 chunk)
         {
-            //return Vector3.Distance(Viewer.position,chunk.Position);
             return length(viewerChunkPos - chunk);
         }
     }
 
-    //public LoadingState State { get; private set; } = LoadingState.Unloaded;
-
-    /// <summary>
-    /// Keeps this chunk loaded at all times.
-    /// </summary>
     public bool KeepLoaded { get; set; } = false;
 
     public int3 Position;
@@ -132,18 +118,12 @@ public class Chunk : MonoBehaviour
     public List<ChunkObjectInfo> chunkObjectInfo;
     public bool chunkObjectsGenerated = false;
 
-    //private bool generateCollider;
-
     public bool PointsLoaded = false;
     public bool NewlyGenerated = true;
-    //public bool ChunkObjectsGenerated = false;
-
     public float3 GetCentre(Map map)
     {
         return new float3(Position) * map.BoundsSize;
     }
-
-    //object loadLock = new object();
 
     private void Awake()
     {
@@ -191,53 +171,10 @@ public class Chunk : MonoBehaviour
             IsoOffsetByHeightAbs = 0.4f
         };
 
-        /*var isoHeightOffset = 0.1f;
-        var isoOffset = 0f;
-
-        if (Position.y <= -2 && Position.y > -4)
-        {
-            isoHeightOffset = 0f;
-            isoOffset = -0.2f;
-        }
-        else if (Position.y <= -4)
-        {
-            isoHeightOffset = -0.2f;
-            isoOffset = 0.6f;
-        }
-
-        return new Map.ChunkGenerationParameters
-        {
-            IsoOffsetByHeight = isoHeightOffset,
-            IsoOffset = isoOffset
-        };*/
     }
 
-    // Add components/get references in case lost (references can be lost when working in the editor)
-    //public async Task Init(Material mat, bool generateCollider, bool cached)
     public async Task<bool> Init(Map map, bool cached)
     {
-        /*gameObject.SetActive(true);
-        generateCollider = map.generateColliders;
-
-
-        if (MainCollider == null && generateCollider)
-        {
-            MainCollider = gameObject.AddComponent<MeshCollider>();
-        }
-        if (MainCollider != null && !generateCollider)
-        {
-            DestroyImmediate(MainCollider);
-        }*/
-
-        /*MainRenderer.enabled = true;
-
-        if (map.generateColliders && MainCollider.sharedMesh == null)
-        {
-            MainCollider.sharedMesh = Mesh;
-        }
-
-        MainRenderer.sharedMaterial = map.ChunkMaterial;*/
-
         return await ChunkStart(cached);
     }
 
@@ -252,68 +189,18 @@ public class Chunk : MonoBehaviour
 
     private async Task<bool> ChunkStart(bool cached)
     {
-        /*lock (loadLock)
-        {
-            if (!(State == LoadingState.Unloaded || State == LoadingState.UnloadedCached))
-            {
-                return false;
-            }
-            State = LoadingState.Loading;
-        }*/
 
-
-        //try
-        //{
-        //Monitor.Enter(loadLock);
-        /*if (!(State == LoadingState.Unloaded || State == LoadingState.UnloadedCached))
-        {
-            return false;
-        }*/
-        //State = LoadingState.Loading;
         string folder = PersistentDataPath + $"/{SourceMap.WorldName}";
         await Task.Run(() => ReadPointData(folder));
-        //State = LoadingState.Loaded;
-        //}
-        //finally
-        //{
-        //Monitor.Exit(loadLock);
-        //}
-
         return true;
 
-        //TODO - Generate Other Objects
     }
 
     private async Task<bool> ChunkEnd()
     {
-        /*lock (loadLock)
-        {
-            if (State != LoadingState.Loaded)
-            {
-                return false;
-            }
-            State = LoadingState.Unloading;
-        }*/
-        /*try
-        {
-            Monitor.Enter(loadLock);
-            if (State != LoadingState.Loaded)
-            {
-                return false;
-            }
-            State = LoadingState.Unloading;*/
         string folder = PersistentDataPath + $"/{SourceMap.WorldName}";
         await Task.Run(() => WritePointData(folder));
-        /*
-                    State = LoadingState.UnloadedCached;
-                }
-                finally
-                {
-                    Monitor.Exit(loadLock);
-                }*/
-
         return true;
-        //TODO - Delete Other Objects
     }
 
     private void WritePointData(string folder)
@@ -324,16 +211,11 @@ public class Chunk : MonoBehaviour
         }
         Span<byte> bytes = MemoryMarshal.AsBytes(Points.AsSpan());
 
-        //Debug.Log($"Writing {Position}");
         using FileStream file = System.IO.File.OpenWrite(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt");
-        //using var file = System.IO.File.Open(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt", FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
-        //openStreams.TryAdd(file, true);
         using System.IO.Compression.GZipStream gzipWriter = new System.IO.Compression.GZipStream(file, System.IO.Compression.CompressionMode.Compress);
         gzipWriter.Write(bytes);
         gzipWriter.Close();
         file.Close();
-        //openStreams.TryRemove(file,out _);
-        //Debug.Log($"Writing {Position} DONE");
     }
 
     private void ReadPointData(string folder)
@@ -357,19 +239,13 @@ public class Chunk : MonoBehaviour
             return;
         }
 
-        //Debug.Log($"READING {Position}");
         using FileStream file = System.IO.File.OpenRead(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt");
-        //using var file = System.IO.File.Open(folder + $"/{SourceMap.WorldName}_{Position.x}_{Position.y}_{Position.z}.txt",FileMode.OpenOrCreate,FileAccess.Read,FileShare.ReadWrite);
-        //openStreams.TryAdd(file, true);
         using System.IO.Compression.GZipStream gzipReader = new System.IO.Compression.GZipStream(file, System.IO.Compression.CompressionMode.Decompress);
         gzipReader.Read(bytes);
         gzipReader.Close();
         file.Close();
-        //openStreams.TryRemove(file, out _);
-
         PointsLoaded = true;
         NewlyGenerated = false;
-        //Debug.Log($"READING {Position} DONE");
     }
 
     public void SaveSynchronously(string folder)
@@ -381,7 +257,6 @@ public class Chunk : MonoBehaviour
     public void OnMeshUpdate()
     {
         MainRenderer.enabled = true;
-        //Debug.Log("Mesh Updated");
     }
 
     private float3 randomInsideUnitSphere(ref Unity.Mathematics.Random randomizer)
@@ -398,7 +273,7 @@ public class Chunk : MonoBehaviour
                 return;
             }
 
-            Debug.Log("GENERATING CHUNK OBJECTS");
+            //Debug.Log("GENERATING CHUNK OBJECTS");
 
             string folder = PersistentDataPath + $"/{SourceMap.WorldName}";
 
@@ -411,7 +286,6 @@ public class Chunk : MonoBehaviour
 
             if (File.Exists(filePath))
             {
-                //using var file = System.IO.File.OpenRead(filePath);
                 string stringData = await File.ReadAllTextAsync(filePath);
 
                 chunkObjectInfo = JsonUtility.FromJson<SaveHolder<List<ChunkObjectInfo>>>(stringData).Value;
@@ -429,9 +303,6 @@ public class Chunk : MonoBehaviour
 
                 float3 center = GetCentre(SourceMap);
 
-                //Debug.Log("A");
-
-                //var times = UnityEngine.Random.Range(2, 6);
                 Unity.Mathematics.Random randomizer = Unity.Mathematics.Random.CreateFromIndex((uint)abs(Position.GetHashCode()));
 
                 int times;
@@ -439,29 +310,29 @@ public class Chunk : MonoBehaviour
                 {
                     times = 0;
                 }
+                else if (Position.y <= 0f)
+                {
+                    times = randomizer.NextInt(3, 20);
+                }
                 else
                 {
-                    times = randomizer.NextInt(1, 4);
+                    times = randomizer.NextInt(3, 4);
                 }
 
                 for (int i = 0; i < times; i++)
                 {
-                    //Debug.Log("B");
                     float3 randomDirection = randomInsideUnitSphere(ref randomizer);
 
                     if (ChunkObjectsDictionary.PickRandomEntry(out ChunkObjectsDictionary.Entry entry, Position))
                     {
-                        //Debug.Log("C");
-                        if (SourceMap.FireRayParallel(new Ray(center, randomDirection), out float3 hit, 10f) && lengthsq(hit - center) > 6f)
+                        if (SourceMap.FireRayParallel(new Ray(center, randomDirection), out float3 hit, 15f) && lengthsq(hit - center) > 2f)
                         {
-                            //Debug.Log("D");
                             chunkObjectInfo.Add(new ChunkObjectInfo
                             {
                                 localScale = float3(float.PositiveInfinity),
                                 ObjectID = entry.ID,
                                 worldpos = hit,
                                 lookAtPoint = center
-                                //worldRot = (Quaternion.LookRotation(normalize(hit - center))).eulerAngles
                             });
                         }
                     }

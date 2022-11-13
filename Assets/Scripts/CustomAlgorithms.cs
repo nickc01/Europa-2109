@@ -13,50 +13,6 @@ public static class CustomAlgorithms
         public static T[] TEMP2 = null;
     }
 
-    /*static Func<S, T> CreateGetter<S, T>(FieldInfo field)
-    {
-        string methodName = field.ReflectedType.FullName + ".get_" + field.Name;
-        DynamicMethod setterMethod = new DynamicMethod(methodName, typeof(T), new Type[1] { typeof(S) }, true);
-        ILGenerator gen = setterMethod.GetILGenerator();
-        if (field.IsStatic)
-        {
-            gen.Emit(OpCodes.Ldsfld, field);
-        }
-        else
-        {
-            gen.Emit(OpCodes.Ldarg_0);
-            gen.Emit(OpCodes.Ldfld, field);
-        }
-        gen.Emit(OpCodes.Ret);
-        return (Func<S, T>)setterMethod.CreateDelegate(typeof(Func<S, T>));
-    }
-
-    static Action<S, T> CreateSetter<S, T>(FieldInfo field)
-    {
-        string methodName = field.ReflectedType.FullName + ".set_" + field.Name;
-        DynamicMethod setterMethod = new DynamicMethod(methodName, null, new Type[2] { typeof(S), typeof(T) }, true);
-        ILGenerator gen = setterMethod.GetILGenerator();
-        if (field.IsStatic)
-        {
-            gen.Emit(OpCodes.Ldarg_1);
-            gen.Emit(OpCodes.Stsfld, field);
-        }
-        else
-        {
-            gen.Emit(OpCodes.Ldarg_0);
-            gen.Emit(OpCodes.Ldarg_1);
-            gen.Emit(OpCodes.Stfld, field);
-        }
-        gen.Emit(OpCodes.Ret);
-        return (Action<S, T>)setterMethod.CreateDelegate(typeof(Action<S, T>));
-    }*/
-
-    /*public static Span<T> GetSpanFromList<T>(List<T> list)
-    {
-        Delegate.CreateDelegate()
-    }*/
-
-
     public static int ThresholdParallelMin { get; set; } = 16384;
 
     public static int MinSsePar(this int[] arrayToMin)
@@ -160,7 +116,7 @@ public static class CustomAlgorithms
             TempArrayHolder<T>.TEMP = new T[src.Count];
         }
 
-        T[] array = TempArrayHolder<T>.TEMP;//new T[src.Count];
+        T[] array = TempArrayHolder<T>.TEMP; 
         if (num * item < src.Count)
         {
             num = src.Count / item;
@@ -169,42 +125,6 @@ public static class CustomAlgorithms
         src.CopyToArrayParallelInnerDac(0, array, 0, src.Count, new (int, int)?((num, item)));
         return array;
     }
-
-    /*public static void SortMergeInPlaceAdaptivePar<T>(this T[] src, IComparer<T> comparer = null, int parallelThreshold = 24576)
-    {
-        try
-        {
-            T[] dst = new T[src.Length];
-            if (parallelThreshold * Environment.ProcessorCount < src.Length)
-            {
-                parallelThreshold = src.Length / Environment.ProcessorCount;
-            }
-
-            src.SortMergeInnerPar(0, src.Length - 1, dst, srcToDst: false, comparer, parallelThreshold);
-        }
-        catch (OutOfMemoryException)
-        {
-            src.SortMergeInPlaceHybridInnerPar(0, src.Length - 1, comparer, parallelThreshold);
-        }
-    }
-
-    public static void SortMergeInPlaceAdaptivePar<T>(this T[] src, int startIndex, int length, IComparer<T> comparer = null, int parallelThreshold = 24576)
-    {
-        try
-        {
-            T[] dst = new T[src.Length];
-            if (parallelThreshold * Environment.ProcessorCount < src.Length)
-            {
-                parallelThreshold = src.Length / Environment.ProcessorCount;
-            }
-
-            src.SortMergeInnerPar(startIndex, startIndex + length - 1, dst, srcToDst: false, comparer, parallelThreshold);
-        }
-        catch (OutOfMemoryException)
-        {
-            src.SortMergeInPlaceHybridInnerPar(startIndex, startIndex + length - 1, comparer, parallelThreshold);
-        }
-    }*/
 
     public static void SortMergeAdaptivePar<T>(ref List<T> list, int startIndex, int length, IComparer<T> comparer = null, int parallelThreshold = 24576)
     {
@@ -215,12 +135,6 @@ public static class CustomAlgorithms
         }
 
         SortMergeInPlaceAdaptivePar(array, startIndex, length, comparer, parallelThreshold);
-        //ParallelAlgorithm.SortMergeInPlaceAdaptivePar
-        //HPCsharp.ParallelAlgorithms.Copy.
-
-        //list = new List<T>(array);
-        //return array;
-
         list.Free();
         list = CustomXListPool.ToListPooled(array, length);
     }
@@ -234,8 +148,6 @@ public static class CustomAlgorithms
                 TempArrayHolder<T>.TEMP2 = new T[length];
             }
 
-            //T[] dst = new T[src.Length];
-            //var dst = ArrayPool<T>.New(length);
             T[] dst = TempArrayHolder<T>.TEMP2;
             if (parallelThreshold * Environment.ProcessorCount < src.Length)
             {

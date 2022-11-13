@@ -82,50 +82,16 @@ public class Map : MonoBehaviour
     [SerializeField]
     private Color boundsGizmoCol = Color.white;
 
-    /*[field: Header("Sphere Brush Setting")]
-    [field: SerializeField]
-    [field: FormerlySerializedAs("sphereBrushSpeed")]
-    public float SphereBrushSpeed { get; private set; } = 1;
-    [SerializeField]
-    private float sphereBrushSize = 1;*/
-    //[SerializeField]
-    //private ComputeShader sphereBrushShader;
-
     [field: SerializeField]
     public float FloorHeight { get; private set; } = -40;
 
     [field: SerializeField]
     public float CeilingHeight { get; private set; } = 50;
 
-    /*[field: Header("Cube Brush Setting")]
-    [field: SerializeField]
-    [field: FormerlySerializedAs("cubeBrushSize")]
-    public Vector3 CubeBrushSize { get; private set; } = new Vector3(5, 5, 5);
-
-    [field: SerializeField]
-    [field: FormerlySerializedAs("cubeBrushSpeed")]
-    public int CubeBrushSpeed { get; private set; } = 1;*/
-
-    /// <summary>
-    /// Automatically loads chunks surrounding the camera
-    /// </summary>
     public bool AutoLoadChunks { get; set; } = true;
 
 
-    /// <summary>
-    /// Automatically unloads chunks when they aren't nearby the camera
-    /// </summary>
     public bool AutoUnloadChunks { get; set; } = true;
-
-    /*public float SphereBrushSize
-    {
-        get => sphereBrushSize;
-        set
-        {
-            sphereBrushSize = value;
-            sphereBrushPointSize = Mathf.CeilToInt(sphereBrushSize / (BoundsSize / (NumPointsPerAxis - 1)));
-        }
-    }*/
 
     private bool runningUpdate = false;
     private GameObject chunkHolder;
@@ -148,8 +114,6 @@ public class Map : MonoBehaviour
     private ConcurrentBag<Chunk> chunksToRender = new ConcurrentBag<Chunk>();
 
     private ConcurrentQueue<AreaGenParameters> areaGenerationQueue = new ConcurrentQueue<AreaGenParameters>();
-    //private ConcurrentQueue<int3> meshesToUpdate = new ConcurrentQueue<int3>();
-
     private List<int3> meshesToUpdate;
     private ConcurrentBag<int3> meshesTEMP = new ConcurrentBag<int3>();
     private object meshUpdateLock = new object();
@@ -208,18 +172,15 @@ public class Map : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log("Target Frame Rate = " + Application.targetFrameRate);
+        //Debug.Log("Target Frame Rate = " + Application.targetFrameRate);
         WorldSeed = UnityEngine.Random.Range(-99999, 99999);
         meshesToUpdate = Unity.VisualScripting.ListPool<int3>.New();
         chunkMeshesToRefresh = Unity.VisualScripting.ListPool<Chunk>.New();
-        //meshesToUpdate = new List<int3>();
-        //chunkMeshesToRefresh = new List<Chunk>();
         if (Directory.Exists(Application.persistentDataPath + "/default"))
         {
             Directory.Delete(Application.persistentDataPath + "/default", true);
         }
         CreateBuffers();
-        //Directory.Delete(Application.persistentDataPath, true);
         MAIN_THREAD = Thread.CurrentThread;
         CreateChunkHolder();
         Vector3 viewerPos = viewer.position;
@@ -241,29 +202,6 @@ public class Map : MonoBehaviour
             chunks[i].KeepLoaded = false;
         }
     }
-
-    //async Task TestGeneration(float3 sourcePosition)
-    //{
-    //Debug.Log("Main Thread Before = " + (Thread.CurrentThread == MAIN_THREAD));
-    /*await Task.Delay(5000);
-    var chunkList = new List<Chunk>();
-    await InitChunksInArea(sourcePosition,new int3(8),keepChunksLoaded: true, out_chunksInArea: chunkList);
-    //SphereBrushSize = 3;
-    //SphereBrushSpeed = 1;
-    //UseSphereBrush(sourcePosition, true, 1f,new int3(20,20,20));
-
-    Debug.Log("Brushing");
-    await UseSphereBrushAsync(sourcePosition, true, 1f, new int3(5, 5, 5));
-    //await UseCubeBrushAsync(sourcePosition,true,10f,new int3(5,5,5));
-
-    Debug.Log("Brush Done");*/
-
-    //Debug.Log("Loaded Chunks = " + chunkList.Count);
-    //Debug.Log("Main Thread After = " + (Thread.CurrentThread == MAIN_THREAD));
-
-    //await Task.Delay(5000);
-    //await InitChunksInArea(sourcePosition, new int3(2), keepChunksLoaded: false, out_chunksInArea: chunkList);
-    //}
 
     private async void FixedUpdate()
     {
@@ -293,13 +231,6 @@ public class Map : MonoBehaviour
 
         list.AddRange(distinct);
 
-        /*int index = 0;
-        foreach (var e in distinct)
-        {
-            list[index] = e;
-            index++;
-        }
-        list.RemoveRange(index, list.Count - index);*/
     }
 
     private void Update()
@@ -313,54 +244,21 @@ public class Map : MonoBehaviour
                 {
                     distanceInt3Sorter = new Chunk.DistanceSorterInt3
                     {
-                        //viewerChunkPos = viewer.transform.position
                     };
                 }
                 distanceInt3Sorter.viewerChunkPos = WorldPosToChunkPos(viewer.transform.position);
-                //DistinctInList(meshesToUpdate);
-                //meshesToUpdate = meshesToUpdate.AsParallel().Distinct().ToList();
-
-                //meshesToUpdate = meshesToUpdate.AsParallel().Distinct().ToList();
                 DistinctInList(meshesToUpdate);
 
-                //CustomAlgorithms.SortMergeAdaptivePar(ref meshesToUpdate, 0, meshesToUpdate.Count, distanceInt3Sorter);
-
-                //meshesToUpdate = meshesToUpdate.SortMergePseudoInPlacePar(distanceInt3Sorter);
-
-                //meshesToUpdate
                 CustomAlgorithms.SortMergeAdaptivePar(ref meshesToUpdate, 0, meshesToUpdate.Count, distanceInt3Sorter);
 
-                //meshesToUpdate = meshesToUpdate.AsParallel().Distinct().ToList();
-                //HPCsharp.ParallelAlgorithm.SortMergePseudoInPlaceAdaptivePar(ref meshesToUpdate, 0, chunkMeshesToRefresh.Count, distanceInt3Sorter);
-                //Debug.Log("B1 Count = " + meshesToUpdate.Count);
-                //CustomAlgorithms.SortMergeAdaptivePar(ref meshesToUpdate, 0, meshesToUpdate.Count, distanceInt3Sorter);
-                //Debug.Log("B2 Count = " + meshesToUpdate.Count);
 
 
 
-                //TODO - TODO - TODO - TRY MAKING THIS MORE PERFORMANT
 
-
-
-                //meshesToUpdate = meshesToUpdate.AsParallel().Distinct().ToListPooled();
                 meshListDirty = false;
 
-                /*for (int i = 0; i < MAX_MESH_UPDATE_CALLS_PER_FRAME; i++)
-                {
-                    var mesh = meshesToUpdate[meshesToUpdate.Count - 1];
-                    UpdateChunkMesh(mesh);
-                }*/
-
-                //meshesToUpdate.Sort
             }
 
-            /*if (meshesToUpdate.Count > 0)
-            {
-                Debug.Log("Nearest Mesh = " + length(meshesToUpdate[meshesToUpdate.Count - 1] - distanceInt3Sorter.viewerChunkPos));
-                Debug.Log("Nearest Mesh Coord = " + meshesToUpdate[meshesToUpdate.Count - 1]);
-            }*/
-
-            //Debug.Log("Count = " + meshesToUpdate.Count);
             int3 lastCoordinate = new int3(int.MaxValue);
             while (meshUpdateCount < MAX_MESH_UPDATE_CALLS_PER_FRAME)
             {
@@ -371,14 +269,11 @@ public class Map : MonoBehaviour
                     {
                         lastCoordinate = coordinate;
                         UpdateChunkMesh(chunk);
-                        //Debug.Log("UPDATING MESH");
-                        //Debug.Log($"Updating Mesh = {chunk.Position}");
                         meshUpdateCount++;
                         meshesToUpdate.RemoveAt(meshesToUpdate.Count - 1);
                     }
                     else
                     {
-                        //Debug.Log("SKIP");
                         meshesToUpdate.RemoveAt(meshesToUpdate.Count - 1);
                     }
                 }
@@ -387,8 +282,6 @@ public class Map : MonoBehaviour
                     break;
                 }
             }
-
-            //Debug.Log("After Count = " + meshesToUpdate.Count);
 
             int tempMeshesCount = meshesTEMP.Count;
 
@@ -399,8 +292,6 @@ public class Map : MonoBehaviour
                     meshesToUpdate.Add(coord);
                 }
             }
-            //Debug.Log("After 2 Count = " + meshesToUpdate.Count);
-
             if (tempMeshesCount > 0)
             {
                 meshListDirty = true;
@@ -414,10 +305,6 @@ public class Map : MonoBehaviour
             {
                 foreach (ChunkObjectInfo entry in chunk.chunkObjectInfo)
                 {
-                    //Debug.Log("Spawning Object = " + entry.ObjectID);
-                    //Debug.Log("ROTATIOn = " + degrees(entry.worldRot));
-                    //var instance = GameObject.Instantiate(ChunkObjectsDictionary.IDDict[entry.ObjectID].Prefab, entry.worldpos, Quaternion.Euler(degrees(entry.worldRot)));
-                    //Quaternion.Euler(degrees(entry.worldRot))
                     GameObject instance = MainPool.Instantiate(ChunkObjectsDictionary.IDDict[entry.ObjectID].Prefab, entry.worldpos, Quaternion.identity);
                     instance.transform.LookAt(entry.lookAtPoint);
                     if (entry.localScale.x != float.PositiveInfinity)
@@ -436,35 +323,9 @@ public class Map : MonoBehaviour
                 foreach (GameObject obj in objects)
                 {
                     MainPool.Return(obj);
-                    //Debug.Log("Spawning Object = " + entry.ObjectID);
-                    //Debug.Log("ROTATIOn = " + degrees(entry.worldRot));
-                    //var instance = GameObject.Instantiate(ChunkObjectsDictionary.IDDict[entry.ObjectID].Prefab, entry.worldpos, Quaternion.Euler(degrees(entry.worldRot)));
-                    //Quaternion.Euler(degrees(entry.worldRot))
-                    /*var instance = MainPool.Instantiate(ChunkObjectsDictionary.IDDict[obj.ObjectID].Prefab, obj.worldpos, Quaternion.identity);
-                    instance.transform.LookAt(obj.lookAtPoint);
-                    if (obj.localScale.x != float.PositiveInfinity)
-                    {
-                        instance.transform.localScale = obj.localScale;
-                    }
-                    objects.loadedChunkObjects.Add(instance);*/
                 }
             }
         }
-
-        /*int meshUpdateCount = 0;
-        while (meshesToUpdate.TryDequeue(out int3 coordinates))
-        {
-            if (loadedCoordinates.TryGetValue(coordinates, out var chunk))
-            {
-                HPCsharp.ParallelAlgorithm.SortMergeInPlaceAdaptivePar()
-            UpdateChunkMesh(coordinates);
-                meshUpdateCount++;
-                if (meshUpdateCount >= MAX_MESH_UPDATE_CALLS_PER_FRAME)
-                {
-                    break;
-                }
-            }
-        }*/
 
         int brushCallCount = 0;
         while (brushCalls.TryDequeue(out BrushCall call))
@@ -512,22 +373,10 @@ public class Map : MonoBehaviour
 
             distanceSorter.viewerChunkPos = WorldPosToChunkPos(viewer.transform.position);
 
-            //chunkMeshesToRefresh.SortMerge(distanceSorter);
-            //HPCsharp.ParallelAlgorithm.SortMergePseudoInPlaceAdaptivePar(ref chunkMeshesToRefresh, 0, chunkMeshesToRefresh.Count, distanceSorter);
-            //CustomAlgorithms.SortMergeAdaptivePar(ref chunkMeshesToRefresh, 0, chunkMeshesToRefresh.Count, distanceSorter);
-
-            //chunkMeshesToRefresh = chunkMeshesToRefresh.SortMergePseudoInPlacePar(distanceSorter);
-            //chunkMeshesToRefresh = chunkMeshesToRefresh.AsParallel().Distinct().ToList();
-
-            //DistinctInList(chunkMeshesToRefresh);
-            //chunkMeshesToRefresh = chunkMeshesToRefresh.AsParallel().Distinct().ToListPooled();
-            //chunkMeshesToRefresh = chunkMeshesToRefresh.SortMergePseudoInPlacePar(distanceSorter);
-
 
             DistinctInList(chunkMeshesToRefresh);
             CustomAlgorithms.SortMergeAdaptivePar(ref chunkMeshesToRefresh, 0, chunkMeshesToRefresh.Count, distanceSorter);
 
-            //CustomAlgorithms.SortMergeAdaptivePar(ref chunkMeshesToRefresh, 0, chunkMeshesToRefresh.Count, distanceSorter);
         }
 
         int3 lastCoordinate = new int3(int.MaxValue);
@@ -537,7 +386,6 @@ public class Map : MonoBehaviour
             chunkMeshesToRefresh.RemoveAt(chunkMeshesToRefresh.Count - 1);
             if (chunk != null && !all(chunk.Position == lastCoordinate) && chunk.gameObject.activeSelf)
             {
-                //Debug.Log($"Updating Chunk Collider for {chunk.Position}");
                 chunk.MainCollider.sharedMesh = chunk.Mesh;
                 lastCoordinate = chunk.Position;
                 break;
@@ -564,10 +412,6 @@ public class Map : MonoBehaviour
 
             await LoadVisibleChunks();
 
-            /*if (!Application.isPlaying)
-            {
-                ReleaseBuffers();
-            }*/
         }
         catch (Exception e)
         {
@@ -587,7 +431,6 @@ public class Map : MonoBehaviour
 
     public async Task LoadChunksInArea(float3 viewerPosition, int3 area, float viewDistance = float.NaN, bool keepChunksLoaded = false, List<Chunk> out_chunksInArea = null)
     {
-        // Debug.Log("A");
         if (Thread.CurrentThread != MAIN_THREAD)
         {
             TaskCompletionSource<bool> completer = new TaskCompletionSource<bool>();
@@ -601,9 +444,7 @@ public class Map : MonoBehaviour
                 completer = completer
             });
 
-            //Debug.Log("GENERATING CHUNKS IN AREA");
             await completer.Task;
-            //Debug.Log("DONE GENERATING CHUNKS IN AREA");
             return;
         }
 
@@ -617,7 +458,6 @@ public class Map : MonoBehaviour
             int3 viewerCoord = new int3(round(ps));
 
             float sqrViewDistance = viewDistance * viewDistance;
-            // Go through all existing chunks and flag for recyling if outside of max view dst
             if (!float.IsNaN(viewDistance))
             {
                 for (int i = loadedChunks.Count - 1; i >= 0; i--)
@@ -687,7 +527,6 @@ public class Map : MonoBehaviour
                             sqrDst = lengthsq(max(o, new float3(0f)));
                         }
 
-                        // Chunk is within view distance and should be created (if it doesn't already exist)
                         if (float.IsNaN(viewDistance) || sqrDst <= sqrViewDistance)
                         {
                             bool usingCached = false;
@@ -710,10 +549,6 @@ public class Map : MonoBehaviour
                                 taskPool.Add(chunk.Init(this, true));
                                 break;
                             }
-                            //else
-                            //{
-
-                            //}
                             if (!usingCached)
                             {
                                 chunksToCreate.Add(coord);
@@ -741,8 +576,6 @@ public class Map : MonoBehaviour
         await Task.WhenAll(taskPool);
         taskPool.Clear();
 
-        //Debug.Log("C");
-
         foreach (Chunk chunk in chunksToRender)
         {
             chunk.MainRenderer.enabled = true;
@@ -764,12 +597,10 @@ public class Map : MonoBehaviour
         {
             chunk.MainRenderer.enabled = false;
             chunk.Mesh.Clear();
-            //chunk.gameObject.SetActive(false);
         }
 
         chunksToRender.Clear();
 
-        //Debug.Log("D");
     }
 
     private static Plane[] planeCache = new Plane[6];
@@ -784,10 +615,7 @@ public class Map : MonoBehaviour
     private float[] pointCache;
 
     private Vector3[] meshVertices;
-    //private Vector2[] meshUVs;
     private int[] meshTriangles;
-    //private Vector3[] meshNormals;
-
     private void AddChunkMeshesToBeUpdated(int3 bl, int3 tr)
     {
         bool locked = false;
@@ -806,7 +634,6 @@ public class Map : MonoBehaviour
                         }
                     }
                 }
-                //meshesToUpdate.AddRange(chunk.Position);
                 meshListDirty = true;
             }
             else
@@ -821,7 +648,6 @@ public class Map : MonoBehaviour
                         }
                     }
                 }
-                //meshesTEMP.Add(chunk.Position);
             }
         }
         finally
@@ -831,10 +657,6 @@ public class Map : MonoBehaviour
                 Monitor.Exit(meshUpdateLock);
             }
         }
-        /*if (Thread.CurrentThread != MAIN_THREAD)
-        {
-            
-        }*/
     }
 
     private void UpdateChunkMesh(Chunk chunk, BufferSet bufferSet = null, bool pointsAlreadySet = false)
@@ -862,12 +684,6 @@ public class Map : MonoBehaviour
                     Monitor.Exit(meshUpdateLock);
                 }
             }
-            /*lock (meshUpdateLock)
-            {
-                meshesToUpdate.Add(chunk.Position);
-                meshListDirty = true;
-            }*/
-            //meshesToUpdate.Enqueue(chunk);
             return;
         }
         int numPoints = NumPointsPerAxis * NumPointsPerAxis * NumPointsPerAxis;
@@ -910,7 +726,6 @@ public class Map : MonoBehaviour
 
         GeneratorShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
 
-        // Get number of triangles in the triangle buffer
         ComputeBuffer.CopyCount(bufferSet.triangleBuffer, bufferSet.triCountBuffer, 0);
         int[] triCountArray = { 0 };
         bufferSet.triCountBuffer.GetData(triCountArray);
@@ -941,8 +756,6 @@ public class Map : MonoBehaviour
         {
             meshVertices = new Vector3[numTris * 3];
             meshTriangles = new int[numTris * 3];
-            //meshNormals = new Vector3[numTris * 3];
-            //meshUVs = new Vector2[numTris * 3];
         }
 
 
@@ -953,23 +766,11 @@ public class Map : MonoBehaviour
             {
                 meshTriangles[i * 3 + j] = i * 3 + j;
                 meshVertices[i * 3 + j] = triangleCache[i][j];
-                //meshUVs[i * 3 + j] = meshVertices[i * 3 + j];
-                //meshNormals[i * 3 + j] = calculateNormalForPoint(meshVertices[i * 3 + j]);
             }
         });
 
-        /*if (numTris > 0)
-        {
-            Debug.DrawLine(meshVertices[0], meshVertices[0] + meshNormals[0], Color.cyan, 10f);
-        }*/
-
-        //mesh.vertices = meshVertices;
-        //mesh.triangles = meshTriangles;
         mesh.SetVertices(meshVertices, 0, numTris * 3, UnityEngine.Rendering.MeshUpdateFlags.Default);
         mesh.SetTriangles(meshTriangles, 0, numTris * 3, 0, false);
-        //mesh.SetNormals(meshNormals, 0, numTris * 3);
-        //mesh.SetUVs(0, meshUVs, 0, numTris * 3);
-
         mesh.RecalculateNormals();
 
         chunk.OnMeshUpdate();
@@ -985,58 +786,11 @@ public class Map : MonoBehaviour
         float step = BoundsSize / (NumPointsPerAxis + 1);
         float3 nrm = default;
 
-        //var pointPos = WorldPosToPointPos(int3(0),p);
-        //var ap = PointPosToWorldPos(int3(0), pointPos);
-        //var incrementAmount = (PointPosToWorldPos(int3(0), pointPos + int3(1)) - ap).x;
 
-
-        /*float SampleStep(int axisType, float axisValue)
-        {
-            var axisIncrement = float3(0);
-
-            if (axisType == 0)
-            {
-                axisIncrement.x = 1;
-            }
-            else if (axisType == 1)
-            {
-                axisIncrement.y = 1;
-            }
-            else if (axisType == 2)
-            {
-                axisIncrement.z = 1;
-            }
-            var left = SamplePoint(ap - axisIncrement) / IsoLevel;
-            var right = SamplePoint(ap + axisIncrement) / IsoLevel;
-            var center = SamplePoint(ap + float3(0, 0, 0)) / IsoLevel;
-
-            if (axisType == 0)
-            {
-                return lerp(center - left, right - center, unlerp(ap.x - incrementAmount, ap.x + incrementAmount, axisValue));
-            }
-            else if (axisType == 1)
-            {
-                return lerp(center - left, right - center, unlerp(ap.y - incrementAmount, ap.y + incrementAmount, axisValue));
-            }
-            else if (axisType == 2)
-            {
-                return lerp(center - left, right - center, unlerp(ap.z - incrementAmount, ap.z + incrementAmount, axisValue));
-            }
-            return 0;
-        }*/
-
-
-        /*nrm.x = SamplePoint(p + float3(step, 0, 0)) - SamplePoint(p - float3(step, 0, 0));
-        nrm.y = SamplePoint(p + float3(0, step, 0)) - SamplePoint(p - float3(0, step, 0));
-        nrm.z = SamplePoint(p + float3(0, 0, step)) - SamplePoint(p - float3(0, 0, step));*/
 
         nrm.x = (SamplePoint(p + float3(step, 0, 0)) / IsoLevel) - (SamplePoint(p - float3(step, 0, 0)) / IsoLevel);
         nrm.y = (SamplePoint(p + float3(0, step, 0)) / IsoLevel) - (SamplePoint(p - float3(0, step, 0)) / IsoLevel);
         nrm.z = (SamplePoint(p + float3(0, 0, step)) / IsoLevel) - (SamplePoint(p - float3(0, 0, step)) / IsoLevel);
-
-        //nrm.x = SampleStep(0, p.x);
-        //nrm.y = SampleStep(1, p.y);
-        //nrm.z = SampleStep(2, p.z);
 
 
         nrm = -normalize(nrm);
@@ -1045,8 +799,6 @@ public class Map : MonoBehaviour
 
     private void OnDestroy()
     {
-        //Debug.Log("Open Streams = " + Chunk.openStreams.Count);
-        //GC.Collect();
         if (Application.isPlaying)
         {
             ReleaseBuffers();
@@ -1054,107 +806,23 @@ public class Map : MonoBehaviour
             string folder = Application.persistentDataPath;
             Parallel.For(0, loadedChunks.Count, i =>
             {
-                //Debug.Log($"Saving Chunk {loadedChunks[i].Position}");
                 loadedChunks[i].SaveSynchronously(folder);
             });
 
-            /*for (int i = 0; i < loadedChunks.Count; i++)
-            {
-                try
-                {
-                    Debug.Log($"Saving Chunk {loadedChunks[i].Position}");
-                    loadedChunks[i].SaveSynchronously(folder);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
-            };*/
         }
     }
-
-    /*private ThreadLocal<Chunk[]> chunkUpdateList = new ThreadLocal<Chunk[]>(() => new Chunk[200]);
-    private ThreadLocal<int> chunkUpdateCount = new ThreadLocal<int>(() => 0);
-    private ThreadLocal<object> chunkUpdateLock = new ThreadLocal<object>(() => new object());
-
-    private bool AddChunkToBeUpdated(Chunk chunk)
-    {
-        int currentCount = chunkUpdateCount.Value;
-        for (int i = 0; i < currentCount; i++)
-        {
-            if (UnityUtilities.GetCachedPtr(chunkUpdateList.Value[i]) == UnityUtilities.GetCachedPtr(chunk))
-            {
-                return false;
-            }
-        }
-
-        lock (chunkUpdateLock.Value)
-        {
-            for (int i = currentCount; i < chunkUpdateCount.Value; i++)
-            {
-                if (UnityUtilities.GetCachedPtr(chunkUpdateList.Value[i]) == UnityUtilities.GetCachedPtr(chunk))
-                {
-                    return false;
-                }
-            }
-
-            chunkUpdateList.Value[chunkUpdateCount.Value] = chunk;
-            chunkUpdateCount.Value++;
-            //Debug.Log("Update Count = " + chunkUpdateCount);
-            return true;
-        }
-    }
-
-    private void ClearChunkUpdateList()
-    {
-        chunkUpdateCount.Value = 0;
-    }*/
-
-    /*public void UseSphereBrush(float3 worldPos, bool EraseMode, float intensity, int3 sphereBrushSize)
-    {
-        UseSphereBrushCPU(worldPos, EraseMode, intensity, sphereBrushSize);
-    }*/
-
-    /*public Task UseSphereBrushAsync(float3 worldPos, bool EraseMode, float intensity, float3 sphereBrushSize)
-    {
-        UseSphereBrush(worldPos, EraseMode, intensity, sphereBrushSize);
-        return Task.CompletedTask;
-    }*/
 
     public void UseSphereBrush(float3 worldPos, bool EraseMode, float intensity, float3 sphereBrushSize)
     {
-        /*if (Thread.CurrentThread != MAIN_THREAD)
-        {
-            brushCalls.Enqueue(new BrushCall
-            {
-                worldPos = worldPos,
-                EraseMode = EraseMode,
-                intensity = intensity,
-                brushSize = sphereBrushSize,
-                brushType = BrushCall.BrushType.Sphere
-            });
-            return;
-        }*/
-
         float3 magicIntensity = (sphereBrushSize / 5f) * 6f;
 
-        /*Debug.Log("MAIN THREAD = " + (Thread.CurrentThread == MAIN_THREAD));
-        Debug.Log("World Pos = " + worldPos);
-        Debug.Log("EraseMode = " + EraseMode);
-        Debug.Log("intensity = " + intensity);*/
         float3 pos = worldPos;
         float brushValue = intensity * IsoLevel;
         if (EraseMode) brushValue *= -1;
-        //Debug.Log("Brush Value = " + brushValue);
-
         int3 sphereBrushPointSize = (int3)ceil(sphereBrushSize / (BoundsSize / (NumPointsPerAxis)));
-        //var sphereBrushSize = sphereBrushSize
-
         int width = sphereBrushPointSize.x * 2;
         int height = sphereBrushPointSize.y * 2;
         int depth = sphereBrushPointSize.z * 2;
-
-        //Debug.Log("Width = " + width);
 
         int3 bl = WorldPosToChunkPos(worldPos - new float3(1) - new float3(sphereBrushSize));
         int3 tr = WorldPosToChunkPos(worldPos + new float3(1) + new float3(sphereBrushSize));
@@ -1173,14 +841,6 @@ public class Map : MonoBehaviour
             float ty = lerp(-sphereBrushSize.y, sphereBrushSize.y, y / (float)height);
             float tz = lerp(-sphereBrushSize.z, sphereBrushSize.z, z / (float)depth);
 
-            /*if (testing)
-            {
-                Debug.Log("TX = " + tx);
-                Debug.Log("TY = " + ty);
-                Debug.Log("TZ = " + tz);
-            }*/
-
-            //float3 samplePoint = pos + ((new float3(x, y, z) - new float3(sphereBrushPointSize)) * (BoundsSize / (NumPointsPerAxis - 1)));
             float3 samplePoint = new float3(tx, ty, tz) + pos;
 
             if (samplePoint.y > CeilingHeight || samplePoint.y < FloorHeight)
@@ -1188,29 +848,10 @@ public class Map : MonoBehaviour
                 return;
             }
 
-            /*if (testing)
-            {
-                Debug.Log("Sample Point = " + samplePoint);
-                Debug.Log("SPhere Brush Point Size = " + sphereBrushPointSize);
-            }*/
-
-
-            //float brushSample = GetSphereBrushValueAtPoint(new int3(x, y, z) - new int3(sphereBrushPointSize));
-            //float brushSample = clamp(sphereBrushPointSize - (length(new int3(x, y, z) - sphereBrushPointSize)), 0f, sphereBrushPointSize * 2f);
-
-            //float samp = sphereBrushPointSize - (length(new int3(x, y, z) - sphereBrushPointSize);
-
-            //var sample3D = (new float3(x, y, z) - sphereBrushPointSize) / sphereBrushPointSize;
 
             float3 relativeCoords = new float3(x, y, z) - sphereBrushPointSize;
 
-            /*if (testing)
-            {
-                Debug.Log("relativeCoords = " + relativeCoords);
-            }*/
-
             float3 sample3D = (relativeCoords * relativeCoords) / (sphereBrushPointSize * sphereBrushPointSize);
-            //var brushSample = clamp(-(csum(sample3D) - 1),0,100f);
             float brushSample = -csum((sample3D - (1f / 3f)) * magicIntensity);
 
             if (brushSample < 0)
@@ -1218,36 +859,10 @@ public class Map : MonoBehaviour
                 brushSample = 0;
             }
 
-            //brushSample = IsoLevel * clamp(1f - (brushSample * brushSample),0f,1f);
-
-            /*if (testing)
-            {
-                Debug.Log("Brush Sample = " + brushSample);
-            }*/
-
             PaintPointAdd(samplePoint, brushSample * brushValue);
         });
 
-        //Debug.Log("Writing");
         AddChunkMeshesToBeUpdated(bl, tr);
-        //Debug.Log("DONE SPHERE");
-        /*for (int i = 0; i < chunkUpdateCount.Value; i++)
-        {
-            Chunk chunk = chunkUpdateList.Value[i];
-            if (chunk != null)
-            {
-                UpdateChunkMesh(chunk);
-                for (int j = i; j < chunkUpdateCount.Value; j++)
-                {
-                    if (chunkUpdateList.Value[j] == chunk)
-                    {
-                        chunkUpdateList.Value[j] = null;
-                    }
-                }
-            }
-        }*/
-
-        //ClearChunkUpdateList();
     }
 
     public Task UseCubeBrushAsync(float3 worldPos, bool EraseMode, float intensity, float3 cubeBrushSize)
@@ -1275,7 +890,6 @@ public class Map : MonoBehaviour
 
     public void UseCubeBrush(float3 worldPos, bool EraseMode, float intensity, float3 cubeBrushSize)
     {
-        //cubeBrushSize /= new float3(0.66628725f);
         if (Thread.CurrentThread != MAIN_THREAD)
         {
             brushCalls.Enqueue(new BrushCall
@@ -1292,11 +906,6 @@ public class Map : MonoBehaviour
         float brushValue = intensity * IsoLevel;
         if (EraseMode) brushValue *= -1;
 
-        /*new Vector3Int(
-                Mathf.CeilToInt(CubeBrushSize.x / (BoundsSize / (NumPointsPerAxis - 1))),
-                Mathf.CeilToInt(CubeBrushSize.y / (BoundsSize / (NumPointsPerAxis - 1))),
-                Mathf.CeilToInt(CubeBrushSize.z / (BoundsSize / (NumPointsPerAxis - 1))));*/
-
         int3 cubeBrushPointSize = (int3)ceil(cubeBrushSize / (BoundsSize / NumPointsPerAxis));
 
         int width = cubeBrushPointSize.x * 2;
@@ -1304,8 +913,6 @@ public class Map : MonoBehaviour
         int depth = cubeBrushPointSize.z * 2;
 
         Vector3 camPos = MainCamera.transform.position;
-
-        //Debug.DrawRay(camPos, pos, Color.blue, 20f);
 
         int3 bl = WorldPosToChunkPos(worldPos - new float3(1) - new float3(cubeBrushSize));
         int3 tr = WorldPosToChunkPos(worldPos + new float3(1) + new float3(cubeBrushSize));
@@ -1319,47 +926,18 @@ public class Map : MonoBehaviour
             int3 point = new int3(x, y, z);
 
 
-            //Vector3 samplePoint = pos + (new Vector3(x - cubeBrushSize.x, y - cubeBrushSize.y, z - cubeBrushSize.z) * (BoundsSize / (NumPointsPerAxis)));
-
-            //float tx = lerp(-cubeBrushSize.x, cubeBrushSize.x, x / (float)width);
-            //float ty = lerp(-cubeBrushSize.y, cubeBrushSize.y, y / (float)height);
-            //float tz = lerp(-cubeBrushSize.z, cubeBrushSize.z, z / (float)depth);
-            //float3 samplePoint = new float3(tx, ty, tz) + pos;
-
-            //float3 samplePoint = pos + ((new float3(x, y, z) - new float3(sphereBrushPointSize)) * (BoundsSize / (NumPointsPerAxis - 1)));
-
             float3 samplePoint = pos + ((float3)point - cubeBrushPointSize) * (BoundsSize / (NumPointsPerAxis));
 
 
             float brushSample = GetCubeBrushValueAtPoint(point - cubeBrushPointSize, cubeBrushPointSize);
-
-            //Debug.DrawRay(camPos, samplePoint, Color.red, 20f);
 
             PaintPointAdd(samplePoint, brushSample * brushValue);
         });
 
         AddChunkMeshesToBeUpdated(bl, tr);
 
-        /*for (int i = 0; i < chunkUpdateCount.Value; i++)
-        {
-            Chunk chunk = chunkUpdateList.Value[i];
-            if (chunk != null)
-            {
-                UpdateChunkMesh(chunk);
-
-                for (int j = i; j < chunkUpdateCount.Value; j++)
-                {
-                    if (chunkUpdateList.Value[j] == chunk)
-                    {
-                        chunkUpdateList.Value[j] = null;
-                    }
-                }
-            }
-        }*/
 
 
-
-        //ClearChunkUpdateList();
     }
 
 
@@ -1382,8 +960,6 @@ public class Map : MonoBehaviour
             chunk.Points[index] = value;
 
             chunk.Points[index] = clamp(chunk.Points[index], IsoLevel - 4, IsoLevel + 4);
-
-            //AddChunkToBeUpdated(chunk);
 
             SetNeighboringPoints(chunk, pointPosition, value);
         }
@@ -1409,8 +985,6 @@ public class Map : MonoBehaviour
             chunk.Points[index] += value;
 
             chunk.Points[index] = clamp(chunk.Points[index], IsoLevel - 4, IsoLevel + 4);
-
-            //AddChunkToBeUpdated(chunk);
 
             SetNeighboringPoints(chunk, pointPosition, chunk.Points[index]);
         }
@@ -1524,7 +1098,6 @@ public class Map : MonoBehaviour
             if (loadedCoordinates.TryGetValue(chunkPosTemp, out Chunk chunk) && pointIndex < numPointsInChunk && pointIndex >= 0)
             {
                 chunk.Points[pointIndex] = value;
-                //AddChunkToBeUpdated(chunk);
             }
         }
         if (pointPosition.x == numVoxelPerAxis)
@@ -1594,18 +1167,15 @@ public class Map : MonoBehaviour
             SetData();
             if (cnt == 3)
             {
-                //xy
                 chunkPosTemp.z = chunkPos.z;
                 pointIndex = PointPosToIndex(x, y, pointPosition.z);
                 SetData();
 
-                //yz
                 chunkPosTemp.z = chunkPos.z + DI.z;
                 chunkPosTemp.x = chunkPos.x;
                 pointIndex = PointPosToIndex(pointPosition.x, y, z);
                 SetData();
 
-                //xz
                 chunkPosTemp.x = chunkPos.x + DI.x;
                 chunkPosTemp.y = chunkPos.y;
                 pointIndex = PointPosToIndex(x, pointPosition.y, z);
@@ -1703,23 +1273,6 @@ public class Map : MonoBehaviour
         return new int3(x, y, z);
     }
 
-    /*[NonSerialized]
-    private int sphereBrushPointSize;
-    Vector3Int CubeBrushPointSize => new Vector3Int(
-                Mathf.CeilToInt(CubeBrushSize.x / (BoundsSize / (NumPointsPerAxis - 1))),
-                Mathf.CeilToInt(CubeBrushSize.y / (BoundsSize / (NumPointsPerAxis - 1))),
-                Mathf.CeilToInt(CubeBrushSize.z / (BoundsSize / (NumPointsPerAxis - 1))));
-    */
-    /*/// <summary>
-    /// Gets the brush value for a certain point. Valid range for x, y and z is [-SphereBrushPointSize - SphereBrushPointSize - 1]
-    /// </summary>
-    /// <returns></returns>
-    float GetSphereBrushValueAtPoint(int3 point)
-    {
-        //return clamp(sphereBrushPointSize - length(point), 0f, sphereBrushPointSize * 2f);
-        return sphereBrushPointSize - new Vector3(point.x, point.y, point.z).magnitude;
-    }*/
-
     private float GetCubeBrushValueAtPoint(int3 point, int3 cubeBrushPointSize)
     {
         float value;
@@ -1773,7 +1326,6 @@ public class Map : MonoBehaviour
 
     private void CreateChunkHolder()
     {
-        // Create/find mesh holder object for organizing chunks under in the hierarchy
         if (chunkHolder == null)
         {
             if (GameObject.Find(chunkHolderName))
@@ -1786,38 +1338,6 @@ public class Map : MonoBehaviour
             }
         }
     }
-
-    /*private async Task<Chunk> CreateChunkAsync(Vector3Int coord)
-    {
-        if (Thread.CurrentThread == MAIN_THREAD)
-        {
-            GameObject chunk = new GameObject($"Chunk ({coord.x}, {coord.y}, {coord.z})");
-            chunk.transform.parent = chunkHolder.transform;
-            Chunk newChunk = chunk.AddComponent<Chunk>();
-            newChunk.Position = coord;
-            newChunk.SourceMap = this;
-            return newChunk;
-        }
-        else
-        {
-            Chunk chunk;
-            if (!reservedChunks.TryDequeue(out chunk))
-            {
-                //Interlocked.Increment(ref creationChunksReserved);
-                reservedChunkInfo.Enqueue(new ReservedChunkInfo() { Coord = coord });
-
-                while (!reservedChunks.TryDequeue(out chunk))
-                {
-                    await Task.Delay(100);
-                }
-            }
-
-            //chunk.name = $"Chunk ({coord.x}, {coord.y}, {coord.z})";
-            chunk.Position = coord;
-            chunk.SourceMap = this;
-            return chunk;
-        }
-    }*/
 
     private Chunk CreateChunk(int3 coord)
     {
@@ -1833,36 +1353,11 @@ public class Map : MonoBehaviour
         newChunk.Position = coord;
         newChunk.SourceMap = this;
         return newChunk;
-        /*if (Thread.CurrentThread == MAIN_THREAD)
-        {
-            
-        }
-        else
-        {
-            Chunk chunk;
-            if (!reservedChunks.TryDequeue(out chunk))
-            {
-                //Interlocked.Increment(ref creationChunksReserved);
-                reservedChunkInfo.Enqueue(new ReservedChunkInfo() { Coord = coord});
-
-                while (!reservedChunks.TryDequeue(out chunk))
-                {
-                    Thread.Sleep(100);
-                }
-            }
-
-            //chunk.name = $"Chunk ({coord.x}, {coord.y}, {coord.z})";
-            chunk.Position = coord;
-            chunk.SourceMap = this;
-            return chunk;
-        }*/
     }
 
     private void OnValidate()
     {
         settingsUpdated = true;
-        //sphereBrushPointSize = Mathf.CeilToInt(sphereBrushSize / (BoundsSize / (NumPointsPerAxis - 1)));
-        //sphereBrushPointSize = (int)ceil(sphereBrushSize / (BoundsSize / (NumPointsPerAxis - 1)));
     }
 
     private BufferSet GetBufferSet()
@@ -1910,27 +1405,9 @@ public class Map : MonoBehaviour
 
     private static Queue<float[]> pointBufferCache = new Queue<float[]>();
 
-    /*static float[] GetChunkPointBuffer()
-    {
-        if (pointBufferCache.TryDequeue(out float[] buffer))
-        {
-            return buffer;
-        }
-        else
-        {
-            int numPoints = Instance.NumPointsPerAxis * Instance.NumPointsPerAxis * Instance.NumPointsPerAxis;
-            return new float[numPoints];
-        }
-    }
-
-    static void ReturnChunkPointBuffer(float[] buffer)
-    {
-        pointBufferCache.Enqueue(buffer);
-    }*/
-
     private struct Triangle
     {
-#pragma warning disable 649 // disable unassigned variable warning
+#pragma warning disable 649     
         public Vector3 a;
         public Vector3 b;
         public Vector3 c;
@@ -1959,7 +1436,6 @@ public class Map : MonoBehaviour
             Gizmos.color = boundsGizmoCol;
 
             List<Chunk> chunks = (loadedChunks == null) ? new List<Chunk>(FindObjectsOfType<Chunk>()) : loadedChunks;
-            //foreach (Chunk chunk in chunks)
             for (int i = chunks.Count - 1; i >= 0; i--)
             {
                 if (i >= chunks.Count)

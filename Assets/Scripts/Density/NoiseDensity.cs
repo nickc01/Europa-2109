@@ -23,7 +23,6 @@ public class NoiseDensity : MapGenerator
     {
         buffersToRelease = new List<ComputeBuffer>();
 
-        // Noise parameters
         System.Random prng = new System.Random(map.WorldSeed);
         Vector3[] offsets = new Vector3[numOctaves];
         float offsetRange = 1000;
