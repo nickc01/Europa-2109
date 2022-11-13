@@ -17,22 +17,22 @@ public static class Perlin
 
     public static float Noise(float x)
     {
-        var X = (int)floor(x) & 0xff;
+        int X = (int)floor(x) & 0xff;
         x -= (int)floor(x);
-        var u = Fade(x);
+        float u = Fade(x);
         return lerp(u, Grad(perm[X], x), Grad(perm[X + 1], x - 1)) * 2;
     }
 
     public static float Noise(float x, float y)
     {
-        var X = Mathf.FloorToInt(x) & 0xff;
-        var Y = Mathf.FloorToInt(y) & 0xff;
+        int X = Mathf.FloorToInt(x) & 0xff;
+        int Y = Mathf.FloorToInt(y) & 0xff;
         x -= Mathf.Floor(x);
         y -= Mathf.Floor(y);
-        var u = Fade(x);
-        var v = Fade(y);
-        var A = (perm[X] + Y) & 0xff;
-        var B = (perm[X + 1] + Y) & 0xff;
+        float u = Fade(x);
+        float v = Fade(y);
+        int A = (perm[X] + Y) & 0xff;
+        int B = (perm[X + 1] + Y) & 0xff;
         return Lerp(v, Lerp(u, Grad(perm[A], x, y), Grad(perm[B], x - 1, y)),
                        Lerp(u, Grad(perm[A + 1], x, y - 1), Grad(perm[B + 1], x - 1, y - 1)));
     }
@@ -49,21 +49,21 @@ public static class Perlin
 
     public static float Noise(float x, float y, float z)
     {
-        var X = (int)floor(x) & 0xff;
-        var Y = (int)floor(y) & 0xff;
-        var Z = (int)floor(z) & 0xff;
+        int X = (int)floor(x) & 0xff;
+        int Y = (int)floor(y) & 0xff;
+        int Z = (int)floor(z) & 0xff;
         x -= floor(x);
         y -= floor(y);
         z -= floor(z);
-        var u = Fade(x);
-        var v = Fade(y);
-        var w = Fade(z);
-        var A = (perm[X] + Y) & 0xff;
-        var B = (perm[X + 1] + Y) & 0xff;
-        var AA = (perm[A] + Z) & 0xff;
-        var BA = (perm[B] + Z) & 0xff;
-        var AB = (perm[A + 1] + Z) & 0xff;
-        var BB = (perm[B + 1] + Z) & 0xff;
+        float u = Fade(x);
+        float v = Fade(y);
+        float w = Fade(z);
+        int A = (perm[X] + Y) & 0xff;
+        int B = (perm[X + 1] + Y) & 0xff;
+        int AA = (perm[A] + Z) & 0xff;
+        int BA = (perm[B] + Z) & 0xff;
+        int AB = (perm[A + 1] + Z) & 0xff;
+        int BB = (perm[B + 1] + Z) & 0xff;
         return lerp(w, lerp(v, lerp(u, Grad(perm[AA], x, y, z), Grad(perm[BA], x - 1, y, z)),
                                lerp(u, Grad(perm[AB], x, y - 1, z), Grad(perm[BB], x - 1, y - 1, z))),
                        lerp(v, lerp(u, Grad(perm[AA + 1], x, y, z - 1), Grad(perm[BA + 1], x - 1, y, z - 1)),
@@ -81,9 +81,9 @@ public static class Perlin
 
     public static float Fbm(float x, int octave)
     {
-        var f = 0.0f;
-        var w = 0.5f;
-        for (var i = 0; i < octave; i++)
+        float f = 0.0f;
+        float w = 0.5f;
+        for (int i = 0; i < octave; i++)
         {
             f += w * Noise(x);
             x *= 2.0f;
@@ -94,9 +94,9 @@ public static class Perlin
 
     public static float Fbm(Vector2 coord, int octave)
     {
-        var f = 0.0f;
-        var w = 0.5f;
-        for (var i = 0; i < octave; i++)
+        float f = 0.0f;
+        float w = 0.5f;
+        for (int i = 0; i < octave; i++)
         {
             f += w * Noise(coord);
             coord *= 2.0f;
@@ -112,9 +112,9 @@ public static class Perlin
 
     public static float Fbm(Vector3 coord, int octave)
     {
-        var f = 0.0f;
-        var w = 0.5f;
-        for (var i = 0; i < octave; i++)
+        float f = 0.0f;
+        float w = 0.5f;
+        for (int i = 0; i < octave; i++)
         {
             f += w * Noise((Vector2)coord);
             coord *= 2.0f;
@@ -132,35 +132,35 @@ public static class Perlin
 
     #region Private functions
 
-    static float Fade(float t)
+    private static float Fade(float t)
     {
         return t * t * t * (t * (t * 6 - 15) + 10);
     }
 
-    static float Lerp(float t, float a, float b)
+    private static float Lerp(float t, float a, float b)
     {
         return a + t * (b - a);
     }
 
-    static float Grad(int hash, float x)
+    private static float Grad(int hash, float x)
     {
         return (hash & 1) == 0 ? x : -x;
     }
 
-    static float Grad(int hash, float x, float y)
+    private static float Grad(int hash, float x, float y)
     {
         return ((hash & 1) == 0 ? x : -x) + ((hash & 2) == 0 ? y : -y);
     }
 
-    static float Grad(int hash, float x, float y, float z)
+    private static float Grad(int hash, float x, float y, float z)
     {
-        var h = hash & 15;
-        var u = h < 8 ? x : y;
-        var v = h < 4 ? y : (h == 12 || h == 14 ? x : z);
+        int h = hash & 15;
+        float u = h < 8 ? x : y;
+        float v = h < 4 ? y : (h == 12 || h == 14 ? x : z);
         return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
     }
 
-    static int[] perm = {
+    private static int[] perm = {
         151,160,137,91,90,15,
         131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
         190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,

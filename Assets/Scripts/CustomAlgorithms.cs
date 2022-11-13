@@ -1,18 +1,13 @@
-﻿using System;
+﻿using HPCsharp;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Reflection.Emit;
-using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
-using HPCsharp;
-using HPCsharp.ParallelAlgorithms;
 using Unity.VisualScripting;
 
 public static class CustomAlgorithms
 {
-    static class TempArrayHolder<T>
+    private static class TempArrayHolder<T>
     {
         public static T[] TEMP = null;
         public static T[] TEMP2 = null;
@@ -136,7 +131,7 @@ public static class CustomAlgorithms
             return;
         }
 
-        var (minWorkQuanta, degreeOfParallelism) = parSettings ?? (65536, Environment.ProcessorCount);
+        (int minWorkQuanta, int degreeOfParallelism) = parSettings ?? (65536, Environment.ProcessorCount);
         if (length <= minWorkQuanta || degreeOfParallelism == 1)
         {
             src.CopyTo(srcStart, dst, dstStart, length);
@@ -227,10 +222,10 @@ public static class CustomAlgorithms
         //return array;
 
         list.Free();
-        list = array.ToListPooled();
+        list = CustomXListPool.ToListPooled(array, length);
     }
 
-    static void SortMergeInPlaceAdaptivePar<T>(this T[] src, int startIndex, int length, IComparer<T> comparer = null, int parallelThreshold = 24576)
+    private static void SortMergeInPlaceAdaptivePar<T>(this T[] src, int startIndex, int length, IComparer<T> comparer = null, int parallelThreshold = 24576)
     {
         try
         {
@@ -241,7 +236,7 @@ public static class CustomAlgorithms
 
             //T[] dst = new T[src.Length];
             //var dst = ArrayPool<T>.New(length);
-            var dst = TempArrayHolder<T>.TEMP2;
+            T[] dst = TempArrayHolder<T>.TEMP2;
             if (parallelThreshold * Environment.ProcessorCount < src.Length)
             {
                 parallelThreshold = src.Length / Environment.ProcessorCount;
@@ -372,7 +367,7 @@ public static class CustomAlgorithms
         MergeDivideAndConquerInPlacePar(src, startIndex, midIndex, endIndex, comparer, threshold1, threshold2);
     }
 
-    static void MergeDivideAndConquerInPlacePar<T>(T[] arr, int startIndex, int midIndex, int endIndex, IComparer<T> comparer = null, int threshold0 = 16384, int threshold1 = 16384)
+    private static void MergeDivideAndConquerInPlacePar<T>(T[] arr, int startIndex, int midIndex, int endIndex, IComparer<T> comparer = null, int threshold0 = 16384, int threshold1 = 16384)
     {
         int num = midIndex - startIndex + 1;
         int num2 = endIndex - midIndex;
@@ -430,7 +425,7 @@ public static class CustomAlgorithms
         }
     }
 
-    static void BlockSwapReversalPar<T>(T[] array, int l, int m, int r, int threshold = 16384)
+    private static void BlockSwapReversalPar<T>(T[] array, int l, int m, int r, int threshold = 16384)
     {
         if (r - l + 1 < threshold)
         {

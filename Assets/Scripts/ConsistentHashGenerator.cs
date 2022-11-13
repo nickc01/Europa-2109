@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Runtime.CompilerServices;
 
 
 public static class ConsistentHashGenerator
@@ -70,7 +65,9 @@ public static class ConsistentHashGenerator
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint RotateLeft(uint value, int offset)
-            => (value << offset) | (value >> (32 - offset));
+    {
+        return (value << offset) | (value >> (32 - offset));
+    }
 
     private static uint MixFinal(uint hash)
     {

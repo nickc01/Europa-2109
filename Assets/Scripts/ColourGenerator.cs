@@ -1,46 +1,50 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 [ExecuteInEditMode]
-public class ColourGenerator : MonoBehaviour {
+public class ColourGenerator : MonoBehaviour
+{
     public Material mat;
     public Gradient gradient;
     public float normalOffsetWeight;
+    private Texture2D texture;
+    private const int textureResolution = 50;
 
-    Texture2D texture;
-    const int textureResolution = 50;
-
-    void Init () {
-        if (texture == null || texture.width != textureResolution) {
-            texture = new Texture2D (textureResolution, 1, TextureFormat.RGBA32, false);
+    private void Init()
+    {
+        if (texture == null || texture.width != textureResolution)
+        {
+            texture = new Texture2D(textureResolution, 1, TextureFormat.RGBA32, false);
         }
     }
 
-    void Update () {
-        Init ();
-        UpdateTexture ();
+    private void Update()
+    {
+        Init();
+        UpdateTexture();
 
-        Map m = FindObjectOfType<Map> ();
+        Map m = FindObjectOfType<Map>();
 
         float boundsY = m.BoundsSize;
 
-        mat.SetFloat ("boundsY", boundsY);
-        mat.SetFloat ("normalOffsetWeight", normalOffsetWeight);
+        mat.SetFloat("boundsY", boundsY);
+        mat.SetFloat("normalOffsetWeight", normalOffsetWeight);
 
-        mat.SetTexture ("ramp", texture);
+        mat.SetTexture("ramp", texture);
     }
 
-    void UpdateTexture () {
-        if (gradient != null) {
+    private void UpdateTexture()
+    {
+        if (gradient != null)
+        {
             Color[] colours = new Color[texture.width];
-            for (int i = 0; i < textureResolution; i++) {
-                Color gradientCol = gradient.Evaluate (i / (textureResolution - 1f));
+            for (int i = 0; i < textureResolution; i++)
+            {
+                Color gradientCol = gradient.Evaluate(i / (textureResolution - 1f));
                 colours[i] = gradientCol;
             }
 
-            texture.SetPixels (colours);
-            texture.Apply ();
+            texture.SetPixels(colours);
+            texture.Apply();
         }
     }
 }

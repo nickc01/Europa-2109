@@ -16,27 +16,27 @@ namespace SimplexNoise
     {
         public static float[] Calc1D(int width, float scale)
         {
-            var values = new float[width];
-            for (var i = 0; i < width; i++)
+            float[] values = new float[width];
+            for (int i = 0; i < width; i++)
                 values[i] = Generate(i * scale) * 128 + 128;
             return values;
         }
 
         public static float[,] Calc2D(int width, int height, float scale)
         {
-            var values = new float[width, height];
-            for (var i = 0; i < width; i++)
-                for (var j = 0; j < height; j++)
+            float[,] values = new float[width, height];
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
                     values[i, j] = Generate(i * scale, j * scale) * 128 + 128;
             return values;
         }
 
         public static float[,,] Calc3D(int width, int height, int length, float scale)
         {
-            var values = new float[width, height, length];
-            for (var i = 0; i < width; i++)
-                for (var j = 0; j < height; j++)
-                    for (var k = 0; k < length; k++)
+            float[,,] values = new float[width, height, length];
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
+                    for (int k = 0; k < length; k++)
                         values[i, j, k] = Generate(i * scale, j * scale, k * scale) * 128 + 128;
             return values;
         }
@@ -75,7 +75,7 @@ namespace SimplexNoise
                 else
                 {
                     _perm = new byte[512];
-                    var random = new Random(value);
+                    Random random = new Random(value);
                     random.NextBytes(_perm);
                 }
 
@@ -92,18 +92,18 @@ namespace SimplexNoise
         /// <returns></returns>
         private static float Generate(float x)
         {
-            var i0 = FastFloor(x);
-            var i1 = i0 + 1;
-            var x0 = x - i0;
-            var x1 = x0 - 1.0f;
+            int i0 = FastFloor(x);
+            int i1 = i0 + 1;
+            float x0 = x - i0;
+            float x1 = x0 - 1.0f;
 
-            var t0 = 1.0f - x0 * x0;
+            float t0 = 1.0f - x0 * x0;
             t0 *= t0;
-            var n0 = t0 * t0 * Grad(_perm[i0 & 0xff], x0);
+            float n0 = t0 * t0 * Grad(_perm[i0 & 0xff], x0);
 
-            var t1 = 1.0f - x1 * x1;
+            float t1 = 1.0f - x1 * x1;
             t1 *= t1;
-            var n1 = t1 * t1 * Grad(_perm[i1 & 0xff], x1);
+            float n1 = t1 * t1 * Grad(_perm[i1 & 0xff], x1);
             // The maximum value of this noise is 8*(3/4)^4 = 2.53125
             // A factor of 0.395 scales to fit exactly within [-1,1]
             return 0.395f * (n0 + n1);
@@ -123,17 +123,17 @@ namespace SimplexNoise
             float n0, n1, n2; // Noise contributions from the three corners
 
             // Skew the input space to determine which simplex cell we're in
-            var s = (x + y) * F2; // Hairy factor for 2D
-            var xs = x + s;
-            var ys = y + s;
-            var i = FastFloor(xs);
-            var j = FastFloor(ys);
+            float s = (x + y) * F2; // Hairy factor for 2D
+            float xs = x + s;
+            float ys = y + s;
+            int i = FastFloor(xs);
+            int j = FastFloor(ys);
 
-            var t = (i + j) * G2;
-            var X0 = i - t; // Unskew the cell origin back to (x,y) space
-            var Y0 = j - t;
-            var x0 = x - X0; // The x,y distances from the cell origin
-            var y0 = y - Y0;
+            float t = (i + j) * G2;
+            float X0 = i - t; // Unskew the cell origin back to (x,y) space
+            float Y0 = j - t;
+            float x0 = x - X0; // The x,y distances from the cell origin
+            float y0 = y - Y0;
 
             // For the 2D case, the simplex shape is an equilateral triangle.
             // Determine which simplex we are in.
@@ -145,17 +145,17 @@ namespace SimplexNoise
             // a step of (0,1) in (i,j) means a step of (-c,1-c) in (x,y), where
             // c = (3-sqrt(3))/6
 
-            var x1 = x0 - i1 + G2; // Offsets for middle corner in (x,y) unskewed coords
-            var y1 = y0 - j1 + G2;
-            var x2 = x0 - 1.0f + 2.0f * G2; // Offsets for last corner in (x,y) unskewed coords
-            var y2 = y0 - 1.0f + 2.0f * G2;
+            float x1 = x0 - i1 + G2; // Offsets for middle corner in (x,y) unskewed coords
+            float y1 = y0 - j1 + G2;
+            float x2 = x0 - 1.0f + 2.0f * G2; // Offsets for last corner in (x,y) unskewed coords
+            float y2 = y0 - 1.0f + 2.0f * G2;
 
             // Wrap the integer indices at 256, to avoid indexing perm[] out of bounds
-            var ii = Mod(i, 256);
-            var jj = Mod(j, 256);
+            int ii = Mod(i, 256);
+            int jj = Mod(j, 256);
 
             // Calculate the contribution from the three corners
-            var t0 = 0.5f - x0 * x0 - y0 * y0;
+            float t0 = 0.5f - x0 * x0 - y0 * y0;
             if (t0 < 0.0f) n0 = 0.0f;
             else
             {
@@ -163,7 +163,7 @@ namespace SimplexNoise
                 n0 = t0 * t0 * Grad(_perm[ii + _perm[jj]], x0, y0);
             }
 
-            var t1 = 0.5f - x1 * x1 - y1 * y1;
+            float t1 = 0.5f - x1 * x1 - y1 * y1;
             if (t1 < 0.0f) n1 = 0.0f;
             else
             {
@@ -171,7 +171,7 @@ namespace SimplexNoise
                 n1 = t1 * t1 * Grad(_perm[ii + i1 + _perm[jj + j1]], x1, y1);
             }
 
-            var t2 = 0.5f - x2 * x2 - y2 * y2;
+            float t2 = 0.5f - x2 * x2 - y2 * y2;
             if (t2 < 0.0f) n2 = 0.0f;
             else
             {
@@ -194,21 +194,21 @@ namespace SimplexNoise
             float n0, n1, n2, n3; // Noise contributions from the four corners
 
             // Skew the input space to determine which simplex cell we're in
-            var s = (x + y + z) * F3; // Very nice and simple skew factor for 3D
-            var xs = x + s;
-            var ys = y + s;
-            var zs = z + s;
-            var i = FastFloor(xs);
-            var j = FastFloor(ys);
-            var k = FastFloor(zs);
+            float s = (x + y + z) * F3; // Very nice and simple skew factor for 3D
+            float xs = x + s;
+            float ys = y + s;
+            float zs = z + s;
+            int i = FastFloor(xs);
+            int j = FastFloor(ys);
+            int k = FastFloor(zs);
 
-            var t = (i + j + k) * G3;
-            var X0 = i - t; // Unskew the cell origin back to (x,y,z) space
-            var Y0 = j - t;
-            var Z0 = k - t;
-            var x0 = x - X0; // The x,y,z distances from the cell origin
-            var y0 = y - Y0;
-            var z0 = z - Z0;
+            float t = (i + j + k) * G3;
+            float X0 = i - t; // Unskew the cell origin back to (x,y,z) space
+            float Y0 = j - t;
+            float Z0 = k - t;
+            float x0 = x - X0; // The x,y,z distances from the cell origin
+            float y0 = y - Y0;
+            float z0 = z - Z0;
 
             // For the 3D case, the simplex shape is a slightly irregular tetrahedron.
             // Determine which simplex we are in.
@@ -235,23 +235,23 @@ namespace SimplexNoise
             // a step of (0,0,1) in (i,j,k) means a step of (-c,-c,1-c) in (x,y,z), where
             // c = 1/6.
 
-            var x1 = x0 - i1 + G3; // Offsets for second corner in (x,y,z) coords
-            var y1 = y0 - j1 + G3;
-            var z1 = z0 - k1 + G3;
-            var x2 = x0 - i2 + 2.0f * G3; // Offsets for third corner in (x,y,z) coords
-            var y2 = y0 - j2 + 2.0f * G3;
-            var z2 = z0 - k2 + 2.0f * G3;
-            var x3 = x0 - 1.0f + 3.0f * G3; // Offsets for last corner in (x,y,z) coords
-            var y3 = y0 - 1.0f + 3.0f * G3;
-            var z3 = z0 - 1.0f + 3.0f * G3;
+            float x1 = x0 - i1 + G3; // Offsets for second corner in (x,y,z) coords
+            float y1 = y0 - j1 + G3;
+            float z1 = z0 - k1 + G3;
+            float x2 = x0 - i2 + 2.0f * G3; // Offsets for third corner in (x,y,z) coords
+            float y2 = y0 - j2 + 2.0f * G3;
+            float z2 = z0 - k2 + 2.0f * G3;
+            float x3 = x0 - 1.0f + 3.0f * G3; // Offsets for last corner in (x,y,z) coords
+            float y3 = y0 - 1.0f + 3.0f * G3;
+            float z3 = z0 - 1.0f + 3.0f * G3;
 
             // Wrap the integer indices at 256, to avoid indexing perm[] out of bounds
-            var ii = Mod(i, 256);
-            var jj = Mod(j, 256);
-            var kk = Mod(k, 256);
+            int ii = Mod(i, 256);
+            int jj = Mod(j, 256);
+            int kk = Mod(k, 256);
 
             // Calculate the contribution from the four corners
-            var t0 = 0.6f - x0 * x0 - y0 * y0 - z0 * z0;
+            float t0 = 0.6f - x0 * x0 - y0 * y0 - z0 * z0;
             if (t0 < 0.0f) n0 = 0.0f;
             else
             {
@@ -259,7 +259,7 @@ namespace SimplexNoise
                 n0 = t0 * t0 * Grad(_perm[ii + _perm[jj + _perm[kk]]], x0, y0, z0);
             }
 
-            var t1 = 0.6f - x1 * x1 - y1 * y1 - z1 * z1;
+            float t1 = 0.6f - x1 * x1 - y1 * y1 - z1 * z1;
             if (t1 < 0.0f) n1 = 0.0f;
             else
             {
@@ -267,7 +267,7 @@ namespace SimplexNoise
                 n1 = t1 * t1 * Grad(_perm[ii + i1 + _perm[jj + j1 + _perm[kk + k1]]], x1, y1, z1);
             }
 
-            var t2 = 0.6f - x2 * x2 - y2 * y2 - z2 * z2;
+            float t2 = 0.6f - x2 * x2 - y2 * y2 - z2 * z2;
             if (t2 < 0.0f) n2 = 0.0f;
             else
             {
@@ -275,7 +275,7 @@ namespace SimplexNoise
                 n2 = t2 * t2 * Grad(_perm[ii + i2 + _perm[jj + j2 + _perm[kk + k2]]], x2, y2, z2);
             }
 
-            var t3 = 0.6f - x3 * x3 - y3 * y3 - z3 * z3;
+            float t3 = 0.6f - x3 * x3 - y3 * y3 - z3 * z3;
             if (t3 < 0.0f) n3 = 0.0f;
             else
             {
@@ -326,40 +326,40 @@ namespace SimplexNoise
 
         private static int Mod(int x, int m)
         {
-            var a = x % m;
+            int a = x % m;
             return a < 0 ? a + m : a;
         }
 
         private static float Grad(int hash, float x)
         {
-            var h = hash & 15;
-            var grad = 1.0f + (h & 7);   // Gradient value 1.0, 2.0, ..., 8.0
+            int h = hash & 15;
+            float grad = 1.0f + (h & 7);   // Gradient value 1.0, 2.0, ..., 8.0
             if ((h & 8) != 0) grad = -grad;         // Set a random sign for the gradient
             return (grad * x);           // Multiply the gradient with the distance
         }
 
         private static float Grad(int hash, float x, float y)
         {
-            var h = hash & 7;      // Convert low 3 bits of hash code
-            var u = h < 4 ? x : y;  // into 8 simple gradient directions,
-            var v = h < 4 ? y : x;  // and compute the dot product with (x,y).
+            int h = hash & 7;      // Convert low 3 bits of hash code
+            float u = h < 4 ? x : y;  // into 8 simple gradient directions,
+            float v = h < 4 ? y : x;  // and compute the dot product with (x,y).
             return ((h & 1) != 0 ? -u : u) + ((h & 2) != 0 ? -2.0f * v : 2.0f * v);
         }
 
         private static float Grad(int hash, float x, float y, float z)
         {
-            var h = hash & 15;     // Convert low 4 bits of hash code into 12 simple
-            var u = h < 8 ? x : y; // gradient directions, and compute dot product.
-            var v = h < 4 ? y : h == 12 || h == 14 ? x : z; // Fix repeats at h = 12 to 15
+            int h = hash & 15;     // Convert low 4 bits of hash code into 12 simple
+            float u = h < 8 ? x : y; // gradient directions, and compute dot product.
+            float v = h < 4 ? y : h == 12 || h == 14 ? x : z; // Fix repeats at h = 12 to 15
             return ((h & 1) != 0 ? -u : u) + ((h & 2) != 0 ? -v : v);
         }
 
         private static float Grad(int hash, float x, float y, float z, float t)
         {
-            var h = hash & 31;      // Convert low 5 bits of hash code into 32 simple
-            var u = h < 24 ? x : y; // gradient directions, and compute dot product.
-            var v = h < 16 ? y : z;
-            var w = h < 8 ? z : t;
+            int h = hash & 31;      // Convert low 5 bits of hash code into 32 simple
+            float u = h < 24 ? x : y; // gradient directions, and compute dot product.
+            float v = h < 16 ? y : z;
+            float w = h < 8 ? z : t;
             return ((h & 1) != 0 ? -u : u) + ((h & 2) != 0 ? -v : v) + ((h & 4) != 0 ? -w : w);
         }
     }
