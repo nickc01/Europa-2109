@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 
-//[ExecuteInEditMode]
 public class MapColors : MonoBehaviour
 {
     public Material mat;

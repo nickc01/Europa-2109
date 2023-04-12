@@ -6,8 +6,6 @@ public class ResultsScreen : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI resultsText;
 
-
-
     public void OnWin()
     {
         resultsText.text = "Mission Accomplished";

@@ -1,6 +1,6 @@
 ﻿#pragma kernel Density
-#include "Assets/Includes/Density.cginc"
-#include "Assets/Includes/Noise.cginc"
+#include "Assets/Scripts/Includes/Density.cginc"
+#include "Assets/Scripts/Includes/Noise.cginc"
 
 // Noise settings
 StructuredBuffer<float3> offsets;

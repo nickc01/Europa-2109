@@ -18,7 +18,6 @@ public class CircleTarget : MonoBehaviour
     public FindableObject TargetObject;
     private Vector3 targetPosition;
     private Vector2 targetSize;
-    private float holdProgress = 0;
     private RectTransform rt;
     private Vector2 canvasSize = default;
 
@@ -42,7 +41,6 @@ public class CircleTarget : MonoBehaviour
         graphic = GetComponent<Graphic>();
         Alpha = 0;
         StartCoroutine(InterpolateAlphaTo(1f, alphaChangeTime));
-        //Debug.Log("SPAWNING CRICLE");
     }
 
     public void DestroyTarget()

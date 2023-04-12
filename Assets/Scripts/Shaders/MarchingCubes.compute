@@ -1,5 +1,5 @@
 ﻿#pragma kernel March
-#include "Assets/Includes/MarchTables.cginc"
+#include "Assets/Scripts/Includes/MarchTables.cginc"
 
 static const int numThreads = 8;
 

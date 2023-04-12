@@ -2468,7 +2468,6 @@ MonoBehaviour:
   mainMixerGroup: {fileID: 1693477519108892716, guid: 65142be5c7a21084a816ec40b9d2fc49, type: 2}
   minMaxPitch: {x: 0.6, y: 1.25}
   minMaxVolume: {x: 0.6, y: 1.25}
-  minMaxSpeed: {x: 1, y: 1}
   minMaxAudioAmount: {x: 0, y: 1.5}
   miningSound: {fileID: 8300000, guid: b349e9c3af4b539478b0a69f797afab9, type: 3}
   miningSoundPitchRange: {x: 0.5, y: 1.5}
@@ -8708,12 +8707,6 @@ MonoBehaviour:
     x: 6
     y: 6
     z: 6
-  neighboringRoomCountRange:
-    x: 1
-    y: 5
-  neighboringRoomDistanceRange:
-    x: 10
-    y: 20
   minDistanceBetweenRooms: 6
   perlinSize: 1
   perlinThreshold: 0.5
